@@ -16,7 +16,8 @@
             </div>
 
             <!-- Show component or placeholder -->
-            <component v-if="componentItem.type === 'component'" :is="componentItem.component" class="component-container" />
+            <component v-if="componentItem.type === 'component'" :is="componentItem.component"
+              class="component-container" />
             <div v-else-if="componentItem.type === 'placeholder'" class="placeholder-cols">
               Drag the item
             </div>
@@ -42,8 +43,14 @@
 
       <!-- Dynamic placeholder row -->
       <v-row>
-        <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols">
-          <div class="placeholder-cols"></div>
+        <v-col v-for="(item, index) in placeHolderLayout" :key="item.id" :cols="item.cols"
+          @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id)">
+          <div v-if="item.type === 'component'" class="component-container">
+            <component :is="item.component" />
+          </div>
+          <div v-else class="placeholder-cols">
+            Drag the item
+          </div>
         </v-col>
       </v-row>
 
@@ -81,9 +88,9 @@
             </div>
           </v-card-text>
           <v-card-actions class="card-actions">
-            <v-btn color="primary" @click="showCard = false">Close</v-btn>
+            <v-btn @click="showCard = false">Close</v-btn>
           </v-card-actions>
-          Interpreter: </v-card>
+        </v-card>
       </div>
 
       <!-- Tabs with drag-and-drop support -->
@@ -110,6 +117,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { markRaw } from 'vue';
+import { v4 as uuidv4 } from 'uuid'; 
 
 const showCard = ref(false);
 const placeHolderLayout = ref([]);
@@ -166,7 +174,9 @@ const onDragStart = (event, item, index) => {
 
 // Drag start handler for tabs
 const onTabDragStart = (event, tabItem, index) => {
-  if (!hasPlaceholder.value) return; // Only allow drag if placeholder exists
+  console.log("the tabItem is : " , tabItem , index)
+   // Only allow drag if placeholder exists
+  if (!hasPlaceholder.value && !placeHolderLayout.value.some(item => item.type === 'placeholder')) return;
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
   event.dataTransfer.setData('text/plain', tabItem);
@@ -174,7 +184,7 @@ const onTabDragStart = (event, tabItem, index) => {
 
 // Drag over handler
 const onDragOver = (event) => {
-  event.preventDefault(); // Allow drop
+  event.preventDefault();
 };
 
 // Drop handler for componentOrder
@@ -225,10 +235,75 @@ const onDrop = (event, dropIndex) => {
   }
 };
 
+// Drop handler for placeholder layout
+const onDropToPlaceholder = (event, placeholderId) => {
+  // console.log("the placeholder id is :" , placeholderId)
+  event.preventDefault();
+
+  const placeholderIndex = placeHolderLayout.value.findIndex(item => item.id === placeholderId);
+  if (placeholderIndex === -1) return;
+
+  // Handle component drop
+  if (draggedItem.value && placeHolderLayout.value[placeholderIndex].type === 'placeholder') {
+    const dragged = draggedItem.value;
+    const fromIndex = draggedIndex.value;
+
+    // Replace placeholder with component
+    placeHolderLayout.value[placeholderIndex] = {
+      id: placeholderId,
+      type: 'component',
+      component: markRaw(dragged.component),
+      cols: placeHolderLayout.value[placeholderIndex].cols,
+      title: dragged.title,
+    };
+
+    // Replace dragged item with placeholder in componentOrder
+    componentOrder.value.splice(fromIndex, 1, {
+      id: dragged.id,
+      type: 'placeholder',
+      cols: dragged.cols,
+    });
+
+    // Reset dragged item
+    draggedItem.value = null;
+    draggedIndex.value = null;
+  }
+
+  // Handle tab drop
+  if (draggedTab.value && placeHolderLayout.value[placeholderIndex].type === 'placeholder') {
+    const tabItem = draggedTab.value;
+    const tabIndex = draggedTabIndex.value;
+
+    // Replace placeholder with tab component
+    placeHolderLayout.value[placeholderIndex] = {
+      id: placeholderId,
+      type: 'component',
+      component: markRaw(tabItem.component),
+      cols: placeHolderLayout.value[placeholderIndex].cols,
+      title: tabItem.title,
+    };
+
+    // Remove tab from tabsList
+    tabsList.value.splice(tabIndex, 1);
+
+    // Reset tab if it was active
+    if (tab.value === tabItem.value && tabsList.value.length > 0) {
+      tab.value = tabsList.value[0].value;
+    } else if (tabsList.value.length === 0) {
+      tab.value = null;
+    }
+
+    // Reset dragged tab
+    draggedTab.value = null;
+    draggedTabIndex.value = null;
+  }
+};
+
 // Drop handler for tabs
 const onDropToTabs = (event) => {
   event.preventDefault();
-  if (!draggedItem.value) return;
+  if (!draggedItem.value) 
+  return;
 
   const dragged = draggedItem.value;
   const fromIndex = draggedIndex.value;
@@ -280,11 +355,18 @@ const resetColumnWidth = (id) => {
 // Add placeholder row
 const addPlaceHolderRow = (col) => {
   col.forEach((cols) => {
-    placeHolderLayout.value.push({ cols });
+    placeHolderLayout.value.push({
+      id: uuidv4(), 
+      type: 'placeholder',
+      cols,
+    });
   });
   showCard.value = false;
 };
 </script>
+
+
+
 
 <style scoped>
 .active-tab {
@@ -362,7 +444,10 @@ const addPlaceHolderRow = (col) => {
   color: rgba(255, 222, 245, 0.7) !important;
 }
 
-
+.component-container {
+  height: 100%;
+  min-height: 600px;
+}
 
 /* Visual feedback during drag */
 [draggable="true"]:hover {
