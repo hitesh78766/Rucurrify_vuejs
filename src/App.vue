@@ -124,7 +124,8 @@
           @drop="onDropToTabs($event)">
           <VTab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
             :class="{ 'active-tab': tab === tabItem.value }" draggable="true"
-            @dragstart="onTabDragStart($event, tabItem, index)">
+            @dragstart="onTabDragStart($event, tabItem, index)"
+            @drop="onDropTab($event, index)">
             {{ tabItem.title }}
           </VTab>
         </VTabs>
@@ -145,7 +146,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { markRaw } from 'vue';
-import { VueDraggableNext } from 'vue-draggable-next'
 import { v4 as uuidv4 } from 'uuid';
 
 const showCard = ref(false);
@@ -226,13 +226,19 @@ const onDragStart = (event, item, index) => {
 };
 
 // Drag start handler for tabs
+// const onTabDragStart = (event, tabItem, index) => {
+//   console.log("the tabItem is : ", tabItem, index)
+//   // Only allow drag if placeholder exists
+//   if (!hasPlaceholder.value && !placeHolderLayout.value.some(item => item.type === 'placeholder')) return;
+//   draggedTab.value = tabItem;
+//   draggedTabIndex.value = index;
+//   event.dataTransfer.setData('text/plain', tabItem);
+// };
+
 const onTabDragStart = (event, tabItem, index) => {
-  console.log("the tabItem is : ", tabItem, index)
-  // Only allow drag if placeholder exists
-  if (!hasPlaceholder.value && !placeHolderLayout.value.some(item => item.type === 'placeholder')) return;
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
-  event.dataTransfer.setData('text/plain', tabItem);
+  event.dataTransfer.setData('text/plain', tabItem.value);
 };
 
 // Drag over handler
@@ -347,6 +353,23 @@ const onDropToPlaceholder = (event, placeholderId) => {
     }
 
     // Reset dragged tab
+    draggedTab.value = null;
+    draggedTabIndex.value = null;
+  }
+};
+
+// New drop handler for reordering tabs
+const onDropTab = (event, dropIndex) => {
+  event.preventDefault();
+
+  if (draggedTab.value) {
+    const fromIndex = draggedTabIndex.value;
+
+    if (fromIndex === dropIndex) return;
+
+    const dragged = tabsList.value.splice(fromIndex, 1)[0];
+    tabsList.value.splice(dropIndex, 0, dragged);
+
     draggedTab.value = null;
     draggedTabIndex.value = null;
   }
