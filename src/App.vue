@@ -9,15 +9,27 @@
             @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
             :draggable="componentItem.type !== 'placeholder'" @dragstart="onDragStart($event, componentItem, index)"
             @dragover="onDragOver($event)" @drop="onDrop($event, index)">
+
+            <v-tooltip text="Delete column" location="top">
+              <template v-slot:activator="{ props }">
+                <div class="trash-column" v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'"
+                  v-bind="props" @click.stop="deleteColumn(componentItem.id, index)">
+                  <i class="fa-solid fa-trash"></i>
+                </div>
+              </template>
+            </v-tooltip>
+
             <!-- Grip for dragging -->
             <div v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'"
               class="grip position-absolute">
               <i class="fa-solid fa-grip-vertical"></i>
             </div>
 
+
             <!-- Show component or placeholder -->
             <component v-if="componentItem.type === 'component'" :is="componentItem.component"
               class="component-container" />
+
             <div v-else-if="componentItem.type === 'placeholder'" class="placeholder-cols">
               Drag the item
             </div>
@@ -43,14 +55,27 @@
 
       <!-- Dynamic placeholder row -->
       <v-row>
-        <v-col v-for="(item, index) in placeHolderLayout" :key="item.id" :cols="item.cols"
-          @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id)">
+        <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols" @dragover="onDragOver($event)"
+          @drop="onDropToPlaceholder($event, item.id)" @mouseenter="hoverPlaceholder = item.id"
+          @mouseleave="hoverPlaceholder = null" class="position-relative">
+
+          <v-tooltip text="Delete column" location="right">
+            <template v-slot:activator="{ props }">
+              <div class="trash-column" v-if="hoverPlaceholder === item.id"
+                v-bind="props" @click.stop="deletePlaceholderColumn(item.id, index)">
+                <i class="fa-solid fa-trash"></i>
+              </div>
+            </template>
+          </v-tooltip>
+
           <div v-if="item.type === 'component'" class="component-container">
             <component :is="item.component" />
           </div>
+
           <div v-else class="placeholder-cols">
             Drag the item
           </div>
+
         </v-col>
       </v-row>
 
@@ -110,14 +135,18 @@
           </VWindowItem>
         </VWindow>
       </div>
+
     </v-main>
   </v-app>
 </template>
 
+
+
 <script setup>
 import { ref, computed } from 'vue';
 import { markRaw } from 'vue';
-import { v4 as uuidv4 } from 'uuid'; 
+import { VueDraggableNext } from 'vue-draggable-next'
+import { v4 as uuidv4 } from 'uuid';
 
 const showCard = ref(false);
 const placeHolderLayout = ref([]);
@@ -141,6 +170,7 @@ const componentOrder = ref([
 ]);
 
 const hoverGrip = ref(null);
+const hoverPlaceholder = ref(null)
 const showColumnWidthToggle = ref({});
 
 const draggedItem = ref(null);
@@ -158,6 +188,29 @@ const tabsList = ref([
   { title: 'Email', value: 'email', component: markRaw(EmailTab) },
 ]);
 
+// delete the component cols
+const deleteColumn = (id, index) => {
+  componentOrder.value.splice(index, 1);
+  adjustColumnWidths();
+};
+
+// adjust the component cols after the deletion of the component cols
+const adjustColumnWidths = () => {
+  const totalCols = 12;
+  const visibleColumns = componentOrder.value.filter(item => item.type === 'component');
+  const count = visibleColumns.length;
+
+  if (count === 0) return;
+
+  const newWidth = Math.floor(totalCols / count);
+
+  componentOrder.value.forEach(item => {
+    if (item.type === 'component') {
+      item.cols = newWidth;
+    }
+  });
+};
+
 // Check if there are any placeholders
 const hasPlaceholder = computed(() => {
   return componentOrder.value.some(item => item.type === 'placeholder');
@@ -174,8 +227,8 @@ const onDragStart = (event, item, index) => {
 
 // Drag start handler for tabs
 const onTabDragStart = (event, tabItem, index) => {
-  console.log("the tabItem is : " , tabItem , index)
-   // Only allow drag if placeholder exists
+  console.log("the tabItem is : ", tabItem, index)
+  // Only allow drag if placeholder exists
   if (!hasPlaceholder.value && !placeHolderLayout.value.some(item => item.type === 'placeholder')) return;
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
@@ -302,8 +355,8 @@ const onDropToPlaceholder = (event, placeholderId) => {
 // Drop handler for tabs
 const onDropToTabs = (event) => {
   event.preventDefault();
-  if (!draggedItem.value) 
-  return;
+  if (!draggedItem.value)
+    return;
 
   const dragged = draggedItem.value;
   const fromIndex = draggedIndex.value;
@@ -354,18 +407,44 @@ const resetColumnWidth = (id) => {
 
 // Add placeholder row
 const addPlaceHolderRow = (col) => {
+    // placeHolderLayout.value = [];
   col.forEach((cols) => {
     placeHolderLayout.value.push({
-      id: uuidv4(), 
+      id: uuidv4(),
       type: 'placeholder',
       cols,
     });
   });
   showCard.value = false;
 };
+
+// delete the col of placeholder
+const deletePlaceholderColumn = (id, index) => {
+  const itemIndex = placeHolderLayout.value.findIndex(item => item.id === id);
+  if (itemIndex === -1) return;
+
+  placeHolderLayout.value.splice(itemIndex, 1);
+  adjustPlaceholderWidth();
+};
+
+// adjust col of placeholder after the deletion of placeholder cols
+const adjustPlaceholderWidth = () => {
+  const totalCols = 12;
+  const visibleColumns = placeHolderLayout.value; 
+  const count = visibleColumns.length;
+
+  if (count === 0) return;
+
+  const baseWidth = Math.floor(totalCols / count);
+  const remainder = totalCols % count;
+
+  // all cols width will be equal
+  placeHolderLayout.value.forEach((item, index) => {
+    item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
+  });
+};
+
 </script>
-
-
 
 
 <style scoped>
@@ -384,6 +463,16 @@ const addPlaceHolderRow = (col) => {
   font-size: 20px;
   color: #555;
 }
+
+.trash-column {
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 20px;
+  color: #c03131ed;
+}
+
+
 
 .relative-wrapper {
   position: relative;
@@ -442,15 +531,13 @@ const addPlaceHolderRow = (col) => {
   min-height: 600px;
   box-shadow: 0 3px 12px rgba(19, 17, 32, 1), 0 0 transparent, 0 0 transparent;
   color: rgba(255, 222, 245, 0.7) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .component-container {
   height: 100%;
   min-height: 600px;
-}
-
-/* Visual feedback during drag */
-[draggable="true"]:hover {
-  opacity: 0.8;
 }
 </style>
