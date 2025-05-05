@@ -1,0 +1,82 @@
+const hideShowComponent = (item) => {
+  // Find the heading item to check its visibility state
+  const headingItem = componetnHeading.value.find((heading) => heading.component === item.component);
+
+  if (!headingItem) return;
+
+  // Toggle visibility
+  if (headingItem.visibility) {
+    // Hide component and replace with placeholder
+    const index = componentOrder.value.findIndex(
+      (component) => component.component === item.component && component.type === 'component'
+    );
+    console.log("the index is :", index);
+
+    if (index !== -1) {
+      // Store the component details before replacing
+      headingItem.storedComponent = {
+        component: componentOrder.value[index].component,
+        title: componentOrder.value[index].title,
+        index: index,
+      };
+
+      // Replace with placeholder
+      componentOrder.value[index] = {
+        id: componentOrder.value[index].id,
+        type: 'placeholder',
+        cols: componentOrder.value[index].cols,
+      };
+    }
+
+    // Update the icon to eye-slash
+    headingItem.icon = 'fa-solid fa-eye-slash';
+    headingItem.visibility = false;
+
+    // Remove the tab from tabsList
+    const tabIndex = tabsList.value.findIndex((tabItem) => tabItem.component === item.component);
+    if (tabIndex !== -1) {
+      headingItem.storedTab = {
+        title: tabsList.value[tabIndex].title,
+        value: tabsList.value[tabIndex].value,
+        component: tabsList.value[tabIndex].component,
+        index: tabIndex,
+      };
+      const removedTab = tabsList.value[tabIndex];
+      tabsList.value.splice(tabIndex, 1);
+
+      // Reset the active tab if removed
+      if (tab.value === removedTab.value) {
+        tab.value = tabsList.value.length > 0 ? tabsList.value[0].value : null;
+      }
+    }
+  } else {
+    // Restore component
+    if (headingItem.storedComponent) {
+      componentOrder.value[headingItem.storedComponent.index] = {
+        id: componentOrder.value[headingItem.storedComponent.index].id,
+        type: 'component',
+        component: headingItem.storedComponent.component,
+        cols: componentOrder.value[headingItem.storedComponent.index].cols,
+        title: headingItem.storedComponent.title,
+      };
+    }
+
+    // Update the icon to eye
+    headingItem.icon = 'fa-solid fa-eye';
+    headingItem.visibility = true;
+
+    // Restore the tab
+    if (headingItem.storedTab) {
+      tabsList.value.splice(headingItem.storedTab.index, 0, {
+        title: headingItem.storedTab.title,
+        value: headingItem.storedTab.value,
+        component: headingItem.storedTab.component,
+      });
+
+      // If no tab is active, set the restored tab as active
+      if (!tab.value && tabsList.value.length > 0) {
+        tab.value = tabsList.value[headingItem.storedTab.index].value;
+      }
+    }
+  }
+};

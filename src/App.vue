@@ -34,21 +34,60 @@
         <v-tabs-window v-model="tabs">
           <v-tabs-window-item value="one">
             <div class="mt-2">
-              content of placeholder tab
+              <h6 class="m-0 text-center">Select Placeholders Columns</h6>
+
+              <div class="mt-3 d-flex align-items-center justify-content-center placeholder-div"
+                @click="showCard = true">
+                <i class="fa-solid fa-tablet-button"></i>
+              </div>
+
+              <!-- Placeholder card -->
+              <div class="mt-2 w-100 d-flex align-items-center justify-content-center">
+                <v-card v-if="showCard" class="placeholder-card" width="300" elevation="5">
+                  <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
+                  <v-card-text>
+                    <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
+                      <v-col v-for="col in 3" :key="col" cols="4">
+                        <div class="placeholder-col"></div>
+                      </v-col>
+                    </div>
+                    <div class="d-flex" @click="addPlaceHolderRow([6, 6])">
+                      <v-col v-for="col in 2" :key="col" cols="6">
+                        <div class="placeholder-col"></div>
+                      </v-col>
+                    </div>
+                    <div class="d-flex" @click="addPlaceHolderRow([8, 4])">
+                      <v-col cols="8">
+                        <div class="placeholder-col"></div>
+                      </v-col>
+                      <v-col cols="4">
+                        <div class="placeholder-col"></div>
+                      </v-col>
+                    </div>
+                    <div class="d-flex" @click="addPlaceHolderRow([12])">
+                      <v-col v-for="col in 1" :key="col" cols="12">
+                        <div class="placeholder-col"></div>
+                      </v-col>
+                    </div>
+                  </v-card-text>
+                  <v-card-actions class="card-actions">
+                    <v-btn @click="showCard = false">Close</v-btn>
+                  </v-card-actions>
+                </v-card>
+              </div>
+
             </div>
           </v-tabs-window-item>
 
           <v-tabs-window-item value="two">
             <v-list density="compact" nav>
-
               <v-list-item>
                 <div class="d-flex justify-content-between align-items-center p-2"
                   v-for="(item, index) in componetnHeading" :key="index">
                   <p class="m-0">{{ item.title }}</p>
-                  <div><i :class="item.icon"></i></div>
+                  <div @click="hideShowComponent(item)"> <i :class="item.icon"></i> </div>
                 </div>
               </v-list-item>
-
             </v-list>
           </v-tabs-window-item>
         </v-tabs-window>
@@ -134,44 +173,6 @@
         </v-col>
       </v-row>
 
-      <div class="mt-3 d-flex align-items-center justify-content-center placeholder-div" @click="showCard = true">
-        <i class="fa-solid fa-tablet-button"></i>
-      </div>
-
-      <!-- Placeholder card -->
-      <div class="mt-2 w-100 d-flex align-items-center justify-content-center">
-        <v-card v-if="showCard" class="placeholder-card" width="300" elevation="5">
-          <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
-          <v-card-text>
-            <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
-              <v-col v-for="col in 3" :key="col" cols="4">
-                <div class="placeholder-col"></div>
-              </v-col>
-            </div>
-            <div class="d-flex" @click="addPlaceHolderRow([6, 6])">
-              <v-col v-for="col in 2" :key="col" cols="6">
-                <div class="placeholder-col"></div>
-              </v-col>
-            </div>
-            <div class="d-flex" @click="addPlaceHolderRow([8, 4])">
-              <v-col cols="8">
-                <div class="placeholder-col"></div>
-              </v-col>
-              <v-col cols="4">
-                <div class="placeholder-col"></div>
-              </v-col>
-            </div>
-            <div class="d-flex" @click="addPlaceHolderRow([12])">
-              <v-col v-for="col in 1" :key="col" cols="12">
-                <div class="placeholder-col"></div>
-              </v-col>
-            </div>
-          </v-card-text>
-          <v-card-actions class="card-actions">
-            <v-btn @click="showCard = false">Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </div>
 
       <!-- Tabs with drag-and-drop support -->
       <div class="mt-4">
@@ -203,47 +204,54 @@ import { v4 as uuidv4 } from 'uuid';
 const drawer = ref(false)
 const tabs = ref('one')
 
-
 const componetnHeading = ref([
   {
     title: "Personal Detail",
     icon: 'fa-solid fa-eye',
-    component: PersonalDetails
+    component: PersonalDetails,
+    visibility : true
   },
   {
     title: "Purchasing Detail ",
     icon: 'fa-solid fa-eye',
-    component : PurchasingDetails
+    component: PurchasingDetails,
+    visibility : true
   },
   {
     title: "consumer Note ",
     icon: 'fa-solid fa-eye',
-    component : CustomerNote
+    component: CustomerNote,
+    visibility : true
   },
   {
     title: "Order",
     icon: 'fa-solid fa-eye',
-    component : OrderTab
+    component: OrderTab,
+    visibility : true
   },
   {
     title: "Timeline",
     icon: 'fa-solid fa-eye',
-    component : TimelineTab
+    component: TimelineTab,
+    visibility : true
   },
   {
     title: "Billing",
     icon: 'fa-solid fa-eye',
-    component : BillingTab
+    component: BillingTab,
+    visibility : true
   },
   {
     title: "Notification",
     icon: 'fa-solid fa-eye',
-    component : Notification
+    component: Notification,
+    visibility : true
   },
   {
     title: "Email",
     icon: 'fa-solid fa-eye',
-    component : EmailTab
+    component: EmailTab,
+    visibility : true
   },
 ])
 
@@ -262,9 +270,9 @@ import EmailTab from './components/tabs/EmailTab.vue';
 
 // Component order with type and title fields
 const componentOrder = ref([
-  { id: 1, type: 'component', component: PersonalDetails, cols: 4, title: 'Personal Details' },
-  { id: 2, type: 'component', component: PurchasingDetails, cols: 4, title: 'Purchasing Details' },
-  { id: 3, type: 'component', component: CustomerNote, cols: 4, title: 'Customer Note' },
+  { id: 1, type: 'component', component: markRaw(PersonalDetails), cols: 4, title: 'Personal Details' },
+  { id: 2, type: 'component', component: markRaw(PurchasingDetails), cols: 4, title: 'Purchasing Details' },
+  { id: 3, type: 'component', component: markRaw(CustomerNote), cols: 4, title: 'Customer Note' },
 ]);
 
 const hoverGrip = ref(null);
@@ -282,14 +290,96 @@ const draggedPlaceholderIndex = ref(null);
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
 const tabsList = ref([
-  { title: 'Orders', value: 'orders', component: OrderTab },
-  { title: 'Timeline', value: 'timeline', component: TimelineTab },
-  { title: 'Billing', value: 'billing', component: BillingTab },
-  { title: 'Notifications', value: 'notifications', component: Notification },
-  { title: 'Email', value: 'email', component: EmailTab },
+  { title: 'Orders', value: 'orders', component: markRaw(OrderTab) },
+  { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab) },
+  { title: 'Billing', value: 'billing', component: markRaw(BillingTab) },
+  { title: 'Notifications', value: 'notifications', component: markRaw(Notification) },
+  { title: 'Email', value: 'email', component: markRaw(EmailTab) },
 ]);
 
+// funciton for hide and show the components and tabs
+const hideShowComponent = (item) => {
+  // Find the heading item to check its visibility state
+  const headingItem = componetnHeading.value.find((heading) => heading.component === item.component);
 
+  if (!headingItem) return;
+
+  // Toggle visibility
+  if (headingItem.visibility) {
+    // Hide component and replace with placeholder
+    const index = componentOrder.value.findIndex(
+      (component) => component.component === item.component && component.type === 'component'
+    );
+    console.log("the index is :", index);
+
+    if (index !== -1) {
+      // Store the component details before replacing
+      headingItem.storedComponent = {
+        component: componentOrder.value[index].component,
+        title: componentOrder.value[index].title,
+        index: index,
+      };
+
+      // Replace with placeholder
+      componentOrder.value[index] = {
+        id: componentOrder.value[index].id,
+        type: 'placeholder',
+        cols: componentOrder.value[index].cols,
+      };
+    }
+
+    // Update the icon to eye-slash
+    headingItem.icon = 'fa-solid fa-eye-slash';
+    headingItem.visibility = false;
+
+    // Remove the tab from tabsList
+    const tabIndex = tabsList.value.findIndex((tabItem) => tabItem.component === item.component);
+    if (tabIndex !== -1) {
+      headingItem.storedTab = {
+        title: tabsList.value[tabIndex].title,
+        value: tabsList.value[tabIndex].value,
+        component: tabsList.value[tabIndex].component,
+        index: tabIndex,
+      };
+      const removedTab = tabsList.value[tabIndex];
+      tabsList.value.splice(tabIndex, 1);
+
+      // Reset the active tab if removed
+      if (tab.value === removedTab.value) {
+        tab.value = tabsList.value.length > 0 ? tabsList.value[0].value : null;
+      }
+    }
+  } else {
+    // Restore component
+    if (headingItem.storedComponent) {
+      componentOrder.value[headingItem.storedComponent.index] = {
+        id: componentOrder.value[headingItem.storedComponent.index].id,
+        type: 'component',
+        component: headingItem.storedComponent.component,
+        cols: componentOrder.value[headingItem.storedComponent.index].cols,
+        title: headingItem.storedComponent.title,
+      };
+    }
+
+    // Update the icon to eye
+    headingItem.icon = 'fa-solid fa-eye';
+    headingItem.visibility = true;
+
+    // Restore the tab
+    if (headingItem.storedTab) {
+      tabsList.value.splice(headingItem.storedTab.index, 0, {
+        title: headingItem.storedTab.title,
+        value: headingItem.storedTab.value,
+        component: headingItem.storedTab.component,
+      });
+
+      // If no tab is active, set the restored tab as active
+      if (!tab.value && tabsList.value.length > 0) {
+        tab.value = tabsList.value[headingItem.storedTab.index].value;
+      }
+    }
+  }
+};
 
 // Delete the component cols
 const deleteColumn = (id, index) => {
@@ -726,7 +816,6 @@ const adjustPlaceholderWidth = () => {
 </script>
 
 <style scoped>
-
 .back-btn {
   background-color: transparent !important;
   color: rgba(225, 222, 245, 0.9);
