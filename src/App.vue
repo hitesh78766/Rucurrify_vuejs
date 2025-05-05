@@ -1,14 +1,65 @@
 <template>
   <v-app>
     <v-main class="main-wrapper">
-      <Header />
+      <!-- <Header /> -->
+
+      <div class="d-flex justify-content-between mb-4">
+        <div>
+          <h4 class="text-h4 customer">Customer ID #101</h4>
+        </div>
+
+        <div class="d-flex">
+          <v-btn class="me-3 back-btn">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back
+          </v-btn>
+          <div class="edit-pen-btn d-flex align-center justify-center">
+            <v-btn icon class="pa-0 ma-0" height="100%" width="100%" @click.stop="drawer = !drawer">
+              <i class="fa-regular fa-pen-to-square"></i>
+            </v-btn>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer -->
+      <v-navigation-drawer class="drawer-section" v-model="drawer" temporary right width="400">
+
+        <v-tabs v-model="tabs" class="d-flex align-items-center justify-content-center">
+          <v-tab value="one">PlaceHolders</v-tab>
+          <v-tab value="two">Components</v-tab>
+        </v-tabs>
+
+        <v-divider></v-divider>
+
+
+        <v-tabs-window v-model="tabs">
+          <v-tabs-window-item value="one">
+            <div class="mt-2">
+              content of placeholder tab
+            </div>
+          </v-tabs-window-item>
+
+          <v-tabs-window-item value="two">
+            <v-list density="compact" nav>
+
+              <v-list-item>
+                <div class="d-flex justify-content-between align-items-center p-2"
+                  v-for="(item, index) in componetnHeading" :key="index">
+                  <p class="m-0">{{ item.title }}</p>
+                  <div><i :class="item.icon"></i></div>
+                </div>
+              </v-list-item>
+
+            </v-list>
+          </v-tabs-window-item>
+        </v-tabs-window>
+      </v-navigation-drawer>
 
       <v-row>
         <div class="d-flex flex-wrap w-100">
           <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
             @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
-            :draggable="true" @dragstart="onDragStart($event, componentItem, index)"
-            @dragover="onDragOver($event)" @drop="onDrop($event, index)">
+            :draggable="true" @dragstart="onDragStart($event, componentItem, index)" @dragover="onDragOver($event)"
+            @drop="onDrop($event, index)">
 
             <v-tooltip text="Delete column" location="top">
               <template v-slot:activator="{ props }">
@@ -54,9 +105,10 @@
       <!-- Dynamic placeholder row -->
       <v-row>
         <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols" @dragover="onDragOver($event)"
-          @drop="onDropToPlaceholder($event, item.id, index)" @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
-          @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative"
-          :draggable="true" @dragstart="onPlaceholderDragStart($event, item, index)">
+          @drop="onDropToPlaceholder($event, item.id, index)"
+          @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
+          @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative" :draggable="true"
+          @dragstart="onPlaceholderDragStart($event, item, index)">
 
           <v-tooltip text="Delete column" location="right">
             <template v-slot:activator="{ props }">
@@ -148,11 +200,57 @@ import { ref, computed } from 'vue';
 import { markRaw } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 
+const drawer = ref(false)
+const tabs = ref('one')
+
+
+const componetnHeading = ref([
+  {
+    title: "Personal Detail",
+    icon: 'fa-solid fa-eye',
+    component: PersonalDetails
+  },
+  {
+    title: "Purchasing Detail ",
+    icon: 'fa-solid fa-eye',
+    component : PurchasingDetails
+  },
+  {
+    title: "consumer Note ",
+    icon: 'fa-solid fa-eye',
+    component : CustomerNote
+  },
+  {
+    title: "Order",
+    icon: 'fa-solid fa-eye',
+    component : OrderTab
+  },
+  {
+    title: "Timeline",
+    icon: 'fa-solid fa-eye',
+    component : TimelineTab
+  },
+  {
+    title: "Billing",
+    icon: 'fa-solid fa-eye',
+    component : BillingTab
+  },
+  {
+    title: "Notification",
+    icon: 'fa-solid fa-eye',
+    component : Notification
+  },
+  {
+    title: "Email",
+    icon: 'fa-solid fa-eye',
+    component : EmailTab
+  },
+])
+
 const showCard = ref(false);
 const placeHolderLayout = ref([]);
 
-// Import components
-import Header from './components/Header.vue';
+
 import PersonalDetails from './components/PersonalDetails.vue';
 import PurchasingDetails from './components/PurchasingDetails.vue';
 import CustomerNote from './components/CustomerNote.vue';
@@ -164,9 +262,9 @@ import EmailTab from './components/tabs/EmailTab.vue';
 
 // Component order with type and title fields
 const componentOrder = ref([
-  { id: 1, type: 'component', component: markRaw(PersonalDetails), cols: 4, title: 'Personal Details' },
-  { id: 2, type: 'component', component: markRaw(PurchasingDetails), cols: 4, title: 'Purchasing Details' },
-  { id: 3, type: 'component', component: markRaw(CustomerNote), cols: 4, title: 'Customer Note' },
+  { id: 1, type: 'component', component: PersonalDetails, cols: 4, title: 'Personal Details' },
+  { id: 2, type: 'component', component: PurchasingDetails, cols: 4, title: 'Purchasing Details' },
+  { id: 3, type: 'component', component: CustomerNote, cols: 4, title: 'Customer Note' },
 ]);
 
 const hoverGrip = ref(null);
@@ -184,24 +282,14 @@ const draggedPlaceholderIndex = ref(null);
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
 const tabsList = ref([
-  { title: 'Orders', value: 'orders', component: markRaw(OrderTab) },
-  { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab) },
-  { title: 'Billing', value: 'billing', component: markRaw(BillingTab) },
-  { title: 'Notifications', value: 'notifications', component: markRaw(Notification) },
-  { title: 'Email', value: 'email', component: markRaw(EmailTab) },
+  { title: 'Orders', value: 'orders', component: OrderTab },
+  { title: 'Timeline', value: 'timeline', component: TimelineTab },
+  { title: 'Billing', value: 'billing', component: BillingTab },
+  { title: 'Notifications', value: 'notifications', component: Notification },
+  { title: 'Email', value: 'email', component: EmailTab },
 ]);
 
-// Component mapping for dynamic component resolution
-const componentMap = {
-  PersonalDetails,
-  PurchasingDetails,
-  CustomerNote,
-  OrderTab,
-  TimelineTab,
-  BillingTab,
-  Notification,
-  EmailTab,
-};
+
 
 // Delete the component cols
 const deleteColumn = (id, index) => {
@@ -243,7 +331,7 @@ const onPlaceholderDragStart = (event, item, index) => {
   draggedPlaceholderIndex.value = index;
 };
 
-// Drag start handler for tabs
+// Drag start handler for tabs 
 const onTabDragStart = (event, tabItem, index) => {
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
@@ -279,7 +367,6 @@ const onDrop = (event, dropIndex) => {
     // Swap or replace in componentOrder
     const targetItem = componentOrder.value[dropIndex];
     if (targetItem.type === 'component') {
-      // Move target component to placeHolderLayout
       placeHolderLayout.value.splice(fromIndex, 1, {
         id: dragged.id,
         type: 'component',
@@ -639,6 +726,33 @@ const adjustPlaceholderWidth = () => {
 </script>
 
 <style scoped>
+
+.back-btn {
+  background-color: transparent !important;
+  color: rgba(225, 222, 245, 0.9);
+}
+
+.edit-pen-btn {
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+}
+
+.edit-pen-btn button {
+  color: rgba(225, 222, 245, 0.9);
+  background: rgba(136, 198, 213, 1);
+}
+
+.customer {
+  font-size: 1.5rem !important;
+  font-weight: 500;
+}
+
+.drawer-section {
+  background-color: rgba(47, 51, 73, 1) !important;
+  color: rgba(255, 222, 245, 0.7);
+}
+
 .active-tab {
   background-color: rgba(136, 198, 213, 1);
   color: white;
