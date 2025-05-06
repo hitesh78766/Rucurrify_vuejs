@@ -1,4 +1,3 @@
-```vue
 <template>
   <v-app>
     <v-main class="main-wrapper">
@@ -36,7 +35,7 @@
               <h6 class="m-0 mt-4 text-center">Select Placeholders Columns</h6>
               <!-- Placeholder card -->
               <div class="mt-3 w-100 d-flex align-items-center justify-content-center">
-                <v-card  class="placeholder-card mb-2"  width="300" elevation="5">
+                <v-card class="placeholder-card mb-2" width="300" elevation="5">
                   <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
                   <v-card-text>
                     <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
@@ -84,7 +83,6 @@
           </v-tabs-window-item>
         </v-tabs-window>
       </v-navigation-drawer>
-
 
       <v-row>
         <div class="d-flex flex-wrap w-100">
@@ -182,7 +180,6 @@
           </VWindowItem>
         </VWindow>
       </div>
-
     </v-main>
   </v-app>
 </template>
@@ -288,7 +285,7 @@ const tabsList = ref([
   { title: 'Email', value: 'email', component: markRaw(EmailTab) },
 ]);
 
-// function for toggle visibility of component 
+// Function to toggle visibility of component
 const hideShowComponent = (item) => {
   const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
   if (!headingItem) return;
@@ -311,7 +308,7 @@ const hideShowComponent = (item) => {
       };
     }
 
-    // Check in placeholder
+    // Check in placeHolderLayout
     const placeholderIndex = placeHolderLayout.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
@@ -418,7 +415,6 @@ const adjustColumnWidths = () => {
       item.cols = newWidth;
     }
   });
-
 };
 
 // Drag start handler for components and placeholders in componentOrder
@@ -433,7 +429,7 @@ const onPlaceholderDragStart = (event, item, index) => {
   draggedPlaceholderIndex.value = index;
 };
 
-// Drag start handler for tabs 
+// Drag start handler for tabs
 const onTabDragStart = (event, tabItem, index) => {
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
@@ -444,7 +440,7 @@ const onDragOver = (event) => {
   event.preventDefault();
 };
 
-// Drop handler for componentOrder
+// Drop handler for components
 const onDrop = (event, dropIndex) => {
   event.preventDefault();
 
@@ -462,13 +458,12 @@ const onDrop = (event, dropIndex) => {
     }
 
     const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if(headingItem){
+    if (headingItem) {
       headingItem.icon = 'fa-solid fa-eye';
-    headingItem.visibility = true;
+      headingItem.visibility = true;
     }
     draggedHiddenComponent.value = null;
     return;
-
   }
 
   // Handle component or placeholder drop from componentOrder
@@ -561,11 +556,10 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
       };
     }
     const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if(headingItem){
+    if (headingItem) {
       headingItem.icon = 'fa-solid fa-eye';
-    headingItem.visibility = true;
+      headingItem.visibility = true;
     }
-    drag
     draggedHiddenComponent.value = null;
     return;
   }
@@ -620,7 +614,6 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
 
   // Handle tab drop
   if (draggedTab.value) {
-
     const tabItem = draggedTab.value;
     const tabIndex = draggedTabIndex.value;
     const targetItem = placeHolderLayout.value[placeholderIndex];
@@ -813,10 +806,7 @@ const adjustPlaceholderWidth = () => {
     item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
   });
 };
-
 </script>
-
-
 
 <style scoped>
 .back-btn {
@@ -939,12 +929,10 @@ const adjustPlaceholderWidth = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-
 }
 
 .component-container {
   height: 100%;
   min-height: 600px;
-
 }
 </style>
