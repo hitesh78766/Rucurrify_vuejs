@@ -14,7 +14,7 @@
             <i class="fa-solid fa-arrow-left me-2"></i>Back
           </v-btn>
           <div class="edit-pen-btn d-flex align-center justify-center">
-            <v-btn icon class="pa-0 ma-0" height="100%" width="100%" @click="drawer = !drawer">
+            <v-btn icon class="pa-0 ma-0" height="100%" width="100%" @click="drawer = true">
               <i class="fa-regular fa-pen-to-square"></i>
             </v-btn>
           </div>
@@ -23,9 +23,14 @@
 
       <!-- Drawer -->
       <v-navigation-drawer class="drawer-section" v-model="drawer" left permanent width="400">
-        <v-tabs v-model="tabs" class="d-flex align-items-center justify-content-center">
-          <v-tab value="one">PlaceHolders</v-tab>
-          <v-tab value="two">Components</v-tab>
+        <v-tabs v-model="tabs" class="d-flex align-items-center justify-content-between position-relative">
+          <div class="me-5">
+            <v-tab value="one">PlaceHolders</v-tab>
+            <v-tab value="two">Components</v-tab>
+          </div>
+          <div class="position-absolute xmark" @click="drawer = false">
+            <i class="fa-solid fa-xmark"></i>
+          </div>
         </v-tabs>
 
         <v-divider class="m-0"></v-divider>
@@ -36,7 +41,7 @@
               <h6 class="m-0 mt-4 text-center">Select Placeholders Columns</h6>
               <!-- Placeholder card -->
               <div class="mt-3 w-100 d-flex align-items-center justify-content-center">
-                <v-card  class="placeholder-card mb-2"  width="300" elevation="5">
+                <v-card class="placeholder-card mb-2" width="300" elevation="5">
                   <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
                   <v-card-text>
                     <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
@@ -83,6 +88,7 @@
             </v-list>
           </v-tabs-window-item>
         </v-tabs-window>
+
       </v-navigation-drawer>
 
 
@@ -279,7 +285,6 @@ const draggedHiddenComponent = ref(null);
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
-
 const tabsList = ref([
   { title: 'Orders', value: 'orders', component: markRaw(OrderTab) },
   { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab) },
@@ -294,6 +299,11 @@ const hideShowComponent = (item) => {
   if (!headingItem) return;
 
   if (headingItem.visibility) {
+    // Clear previous stored positions
+    headingItem.storedComponent = null;
+    headingItem.storedPlaceholder = null;
+    headingItem.storedTab = null;
+
     // Check in componentOrder
     const componentIndex = componentOrder.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
@@ -311,7 +321,7 @@ const hideShowComponent = (item) => {
       };
     }
 
-    // Check in placeholder
+    // Check in placeHolderLayout
     const placeholderIndex = placeHolderLayout.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
@@ -348,32 +358,35 @@ const hideShowComponent = (item) => {
     headingItem.icon = 'fa-solid fa-eye-slash';
     headingItem.visibility = false;
   } else {
-    // Restore to componentOrder
+    // Restore to the current or most logical position
+    let restored = false;
+
+    // Try to restore to current location if it exists
     if (headingItem.storedComponent) {
-      componentOrder.value[headingItem.storedComponent.index] = {
-        id: componentOrder.value[headingItem.storedComponent.index].id,
-        type: 'component',
-        component: headingItem.storedComponent.component,
-        cols: componentOrder.value[headingItem.storedComponent.index].cols,
-        title: headingItem.storedComponent.title,
-      };
-      headingItem.storedComponent = null; // Clear stored component
-    }
-
-    // Restore to placeHolderLayout
-    if (headingItem.storedPlaceholder) {
-      placeHolderLayout.value[headingItem.storedPlaceholder.index] = {
-        id: placeHolderLayout.value[headingItem.storedPlaceholder.index].id,
-        type: 'component',
-        component: headingItem.storedPlaceholder.component,
-        cols: placeHolderLayout.value[headingItem.storedPlaceholder.index].cols,
-        title: headingItem.storedPlaceholder.title,
-      };
-      headingItem.storedPlaceholder = null; // Clear stored placeholder
-    }
-
-    // Restore to tabsList
-    if (headingItem.storedTab) {
+      const targetIndex = headingItem.storedComponent.index;
+      if (componentOrder.value[targetIndex]?.type === 'placeholder') {
+        componentOrder.value[targetIndex] = {
+          id: componentOrder.value[targetIndex].id,
+          type: 'component',
+          component: headingItem.storedComponent.component,
+          cols: componentOrder.value[targetIndex].cols,
+          title: headingItem.storedComponent.title,
+        };
+        restored = true;
+      }
+    } else if (headingItem.storedPlaceholder) {
+      const targetIndex = headingItem.storedPlaceholder.index;
+      if (placeHolderLayout.value[targetIndex]?.type === 'placeholder') {
+        placeHolderLayout.value[targetIndex] = {
+          id: placeHolderLayout.value[targetIndex].id,
+          type: 'component',
+          component: headingItem.storedPlaceholder.component,
+          cols: placeHolderLayout.value[targetIndex].cols,
+          title: headingItem.storedPlaceholder.title,
+        };
+        restored = true;
+      }
+    } else if (headingItem.storedTab) {
       tabsList.value.splice(headingItem.storedTab.index, 0, {
         title: headingItem.storedTab.title,
         value: headingItem.storedTab.value,
@@ -382,11 +395,25 @@ const hideShowComponent = (item) => {
       if (!tab.value && tabsList.value.length > 0) {
         tab.value = tabsList.value[headingItem.storedTab.index].value;
       }
-      headingItem.storedTab = null; // Clear stored tab
+      restored = true;
+    }
+
+    // If not restored (e.g., placeholder was deleted), add to componentOrder as a fallback
+    if (!restored) {
+      componentOrder.value.push({
+        id: uuidv4(),
+        type: 'component',
+        component: markRaw(item.component),
+        cols: 4, // Default width
+        title: item.title,
+      });
     }
 
     headingItem.icon = 'fa-solid fa-eye';
     headingItem.visibility = true;
+    headingItem.storedComponent = null;
+    headingItem.storedPlaceholder = null;
+    headingItem.storedTab = null;
   }
 };
 
@@ -462,9 +489,9 @@ const onDrop = (event, dropIndex) => {
     }
 
     const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if(headingItem){
+    if (headingItem) {
       headingItem.icon = 'fa-solid fa-eye';
-    headingItem.visibility = true;
+      headingItem.visibility = true;
     }
     draggedHiddenComponent.value = null;
     return;
@@ -561,9 +588,9 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
       };
     }
     const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if(headingItem){
+    if (headingItem) {
       headingItem.icon = 'fa-solid fa-eye';
-    headingItem.visibility = true;
+      headingItem.visibility = true;
     }
     drag
     draggedHiddenComponent.value = null;
@@ -861,6 +888,12 @@ const adjustPlaceholderWidth = () => {
   color: #555;
 }
 
+.xmark {
+  right: 12px;
+  top: 2px;
+  font-size: 18px;
+}
+
 .trash-column {
   position: absolute;
   z-index: 1;
@@ -948,3 +981,4 @@ const adjustPlaceholderWidth = () => {
 
 }
 </style>
+
