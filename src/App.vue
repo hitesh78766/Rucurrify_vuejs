@@ -1,3 +1,4 @@
+```vue
 <template>
   <v-app>
     <v-main class="main-wrapper">
@@ -13,7 +14,7 @@
             <i class="fa-solid fa-arrow-left me-2"></i>Back
           </v-btn>
           <div class="edit-pen-btn d-flex align-center justify-center">
-            <v-btn icon class="pa-0 ma-0" height="100%" width="100%" @click.stop="drawer = !drawer">
+            <v-btn icon class="pa-0 ma-0" height="100%" width="100%" @click="drawer = !drawer">
               <i class="fa-regular fa-pen-to-square"></i>
             </v-btn>
           </div>
@@ -21,29 +22,21 @@
       </div>
 
       <!-- Drawer -->
-      <v-navigation-drawer class="drawer-section" v-model="drawer" temporary right width="400">
-
+      <v-navigation-drawer class="drawer-section" v-model="drawer" left permanent width="400">
         <v-tabs v-model="tabs" class="d-flex align-items-center justify-content-center">
           <v-tab value="one">PlaceHolders</v-tab>
           <v-tab value="two">Components</v-tab>
         </v-tabs>
 
-        <v-divider></v-divider>
-
+        <v-divider class="m-0"></v-divider>
 
         <v-tabs-window v-model="tabs">
           <v-tabs-window-item value="one">
             <div class="mt-2">
-              <h6 class="m-0 text-center">Select Placeholders Columns</h6>
-
-              <div class="mt-3 d-flex align-items-center justify-content-center placeholder-div"
-                @click="showCard = true">
-                <i class="fa-solid fa-tablet-button"></i>
-              </div>
-
+              <h6 class="m-0 mt-4 text-center">Select Placeholders Columns</h6>
               <!-- Placeholder card -->
-              <div class="mt-2 w-100 d-flex align-items-center justify-content-center">
-                <v-card v-if="showCard" class="placeholder-card" width="300" elevation="5">
+              <div class="mt-3 w-100 d-flex align-items-center justify-content-center">
+                <v-card  class="placeholder-card mb-2"  width="300" elevation="5">
                   <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
                   <v-card-text>
                     <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
@@ -70,28 +63,28 @@
                       </v-col>
                     </div>
                   </v-card-text>
-                  <v-card-actions class="card-actions">
-                    <v-btn @click="showCard = false">Close</v-btn>
-                  </v-card-actions>
                 </v-card>
               </div>
-
             </div>
           </v-tabs-window-item>
 
           <v-tabs-window-item value="two">
             <v-list density="compact" nav>
               <v-list-item>
-                <div class="d-flex justify-content-between align-items-center p-2"
-                  v-for="(item, index) in componetnHeading" :key="index">
+                <div class="d-flex justify-content-between align-items-center p-3"
+                  v-for="(item, index) in componentHeading" :key="index" :draggable="!item.visibility"
+                  @dragstart="onHiddenComponentDragStart($event, item)">
                   <p class="m-0">{{ item.title }}</p>
-                  <div @click="hideShowComponent(item)"> <i :class="item.icon"></i> </div>
+                  <div @click="hideShowComponent(item)">
+                    <i :class="item.icon"></i>
+                  </div>
                 </div>
               </v-list-item>
             </v-list>
           </v-tabs-window-item>
         </v-tabs-window>
       </v-navigation-drawer>
+
 
       <v-row>
         <div class="d-flex flex-wrap w-100">
@@ -103,7 +96,7 @@
             <v-tooltip text="Delete column" location="top">
               <template v-slot:activator="{ props }">
                 <div class="trash-column" v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'"
-                  v-bind="props" @click.stop="deleteColumn(componentItem.id, index)">
+                  v-bind="props" @click="deleteColumn(componentItem.id, index)">
                   <i class="fa-solid fa-trash"></i>
                 </div>
               </template>
@@ -152,7 +145,7 @@
           <v-tooltip text="Delete column" location="right">
             <template v-slot:activator="{ props }">
               <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
-                @click.stop="deletePlaceholderColumn(item.id, index)">
+                @click="deletePlaceholderColumn(item.id, index)">
                 <i class="fa-solid fa-trash"></i>
               </div>
             </template>
@@ -169,10 +162,8 @@
           <div v-else class="placeholder-cols">
             Drag the item
           </div>
-
         </v-col>
       </v-row>
-
 
       <!-- Tabs with drag-and-drop support -->
       <div class="mt-4">
@@ -197,67 +188,65 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { markRaw } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 
-const drawer = ref(false)
-const tabs = ref('one')
+const drawer = ref(false);
+const tabs = ref('one');
 
-const componetnHeading = ref([
+const componentHeading = ref([
   {
     title: "Personal Detail",
     icon: 'fa-solid fa-eye',
     component: PersonalDetails,
-    visibility : true
+    visibility: true
   },
   {
-    title: "Purchasing Detail ",
+    title: "Purchasing Detail",
     icon: 'fa-solid fa-eye',
     component: PurchasingDetails,
-    visibility : true
+    visibility: true
   },
   {
-    title: "consumer Note ",
+    title: "Consumer Note",
     icon: 'fa-solid fa-eye',
     component: CustomerNote,
-    visibility : true
+    visibility: true
   },
   {
     title: "Order",
     icon: 'fa-solid fa-eye',
     component: OrderTab,
-    visibility : true
+    visibility: true
   },
   {
     title: "Timeline",
     icon: 'fa-solid fa-eye',
     component: TimelineTab,
-    visibility : true
+    visibility: true
   },
   {
     title: "Billing",
     icon: 'fa-solid fa-eye',
     component: BillingTab,
-    visibility : true
+    visibility: true
   },
   {
     title: "Notification",
     icon: 'fa-solid fa-eye',
     component: Notification,
-    visibility : true
+    visibility: true
   },
   {
     title: "Email",
     icon: 'fa-solid fa-eye',
     component: EmailTab,
-    visibility : true
+    visibility: true
   },
-])
+]);
 
-const showCard = ref(false);
 const placeHolderLayout = ref([]);
-
 
 import PersonalDetails from './components/PersonalDetails.vue';
 import PurchasingDetails from './components/PurchasingDetails.vue';
@@ -286,9 +275,11 @@ const draggedTab = ref(null);
 const draggedTabIndex = ref(null);
 const draggedPlaceholder = ref(null);
 const draggedPlaceholderIndex = ref(null);
+const draggedHiddenComponent = ref(null);
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
+
 const tabsList = ref([
   { title: 'Orders', value: 'orders', component: markRaw(OrderTab) },
   { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab) },
@@ -297,42 +288,32 @@ const tabsList = ref([
   { title: 'Email', value: 'email', component: markRaw(EmailTab) },
 ]);
 
-// funciton for hide and show the components and tabs
+// function for toggle visibility of component 
 const hideShowComponent = (item) => {
-  // Find the heading item to check its visibility state
-  const headingItem = componetnHeading.value.find((heading) => heading.component === item.component);
-
+  const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
   if (!headingItem) return;
 
-  // Toggle visibility
   if (headingItem.visibility) {
-    // Hide component and replace with placeholder
     const index = componentOrder.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
-    console.log("the index is :", index);
-
     if (index !== -1) {
-      // Store the component details before replacing
       headingItem.storedComponent = {
         component: componentOrder.value[index].component,
         title: componentOrder.value[index].title,
         index: index,
       };
-
-      // Replace with placeholder
       componentOrder.value[index] = {
         id: componentOrder.value[index].id,
         type: 'placeholder',
         cols: componentOrder.value[index].cols,
       };
+      // console.log('Component hidden, placeholder added at index:', index);
     }
 
-    // Update the icon to eye-slash
     headingItem.icon = 'fa-solid fa-eye-slash';
     headingItem.visibility = false;
 
-    // Remove the tab from tabsList
     const tabIndex = tabsList.value.findIndex((tabItem) => tabItem.component === item.component);
     if (tabIndex !== -1) {
       headingItem.storedTab = {
@@ -344,13 +325,12 @@ const hideShowComponent = (item) => {
       const removedTab = tabsList.value[tabIndex];
       tabsList.value.splice(tabIndex, 1);
 
-      // Reset the active tab if removed
       if (tab.value === removedTab.value) {
         tab.value = tabsList.value.length > 0 ? tabsList.value[0].value : null;
       }
+
     }
   } else {
-    // Restore component
     if (headingItem.storedComponent) {
       componentOrder.value[headingItem.storedComponent.index] = {
         id: componentOrder.value[headingItem.storedComponent.index].id,
@@ -361,11 +341,9 @@ const hideShowComponent = (item) => {
       };
     }
 
-    // Update the icon to eye
     headingItem.icon = 'fa-solid fa-eye';
     headingItem.visibility = true;
 
-    // Restore the tab
     if (headingItem.storedTab) {
       tabsList.value.splice(headingItem.storedTab.index, 0, {
         title: headingItem.storedTab.title,
@@ -373,15 +351,22 @@ const hideShowComponent = (item) => {
         component: headingItem.storedTab.component,
       });
 
-      // If no tab is active, set the restored tab as active
       if (!tab.value && tabsList.value.length > 0) {
         tab.value = tabsList.value[headingItem.storedTab.index].value;
       }
+
     }
   }
 };
 
-// Delete the component cols
+// Drag start for hidden components from componentHeading
+const onHiddenComponentDragStart = (event, item) => {
+  if (item.visibility) return;
+  draggedHiddenComponent.value = item;
+  event.dataTransfer.setData('drawerComponentDrag', item.title);
+};
+
+// Deleting component cols
 const deleteColumn = (id, index) => {
   componentOrder.value.splice(index, 1);
   adjustColumnWidths();
@@ -402,12 +387,8 @@ const adjustColumnWidths = () => {
       item.cols = newWidth;
     }
   });
-};
 
-// Check if there are any placeholders
-const hasPlaceholder = computed(() => {
-  return componentOrder.value.some(item => item.type === 'placeholder');
-});
+};
 
 // Drag start handler for components and placeholders in componentOrder
 const onDragStart = (event, item, index) => {
@@ -436,15 +417,35 @@ const onDragOver = (event) => {
 const onDrop = (event, dropIndex) => {
   event.preventDefault();
 
+  // Handle hidden component drop
+  if (draggedHiddenComponent.value) {
+    const targetItem = componentOrder.value[dropIndex];
+    if (targetItem.type === 'placeholder') {
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: markRaw(draggedHiddenComponent.value.component),
+        cols: targetItem.cols,
+        title: draggedHiddenComponent.value.title,
+      };
+    }
+
+    const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
+    if(headingItem){
+      headingItem.icon = 'fa-solid fa-eye';
+    headingItem.visibility = true;
+    }
+    draggedHiddenComponent.value = null;
+    return;
+
+  }
+
   // Handle component or placeholder drop from componentOrder
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
-
-    // Swap within componentOrder (component-to-component or placeholder)
     componentOrder.value.splice(fromIndex, 1);
     componentOrder.value.splice(dropIndex, 0, dragged);
-
     draggedItem.value = null;
     draggedIndex.value = null;
   }
@@ -453,8 +454,6 @@ const onDrop = (event, dropIndex) => {
   if (draggedPlaceholder.value) {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
-
-    // Swap or replace in componentOrder
     const targetItem = componentOrder.value[dropIndex];
     if (targetItem.type === 'component') {
       placeHolderLayout.value.splice(fromIndex, 1, {
@@ -464,14 +463,11 @@ const onDrop = (event, dropIndex) => {
         cols: dragged.cols,
         title: targetItem.title,
       });
-      // Replace target with dragged placeholder
       componentOrder.value[dropIndex] = dragged;
     } else {
-      // Simple swap within componentOrder
       placeHolderLayout.value.splice(fromIndex, 1);
       componentOrder.value.splice(dropIndex, 0, dragged);
     }
-
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
   }
@@ -481,9 +477,7 @@ const onDrop = (event, dropIndex) => {
     const tabItem = draggedTab.value;
     const tabIndex = draggedTabIndex.value;
     const targetItem = componentOrder.value[dropIndex];
-
     if (targetItem.type === 'placeholder') {
-      // Replace placeholder with tab component
       componentOrder.value[dropIndex] = {
         id: targetItem.id,
         type: 'component',
@@ -492,7 +486,6 @@ const onDrop = (event, dropIndex) => {
         title: tabItem.title,
       };
     } else {
-      // Swap tab with component
       componentOrder.value[dropIndex] = {
         id: targetItem.id,
         type: 'component',
@@ -500,24 +493,18 @@ const onDrop = (event, dropIndex) => {
         cols: targetItem.cols,
         title: tabItem.title,
       };
-      // Add target component to tabsList at the dragged tab's index
       tabsList.value.splice(tabIndex, 0, {
         title: targetItem.title,
         value: `custom-${targetItem.id}-${Date.now()}`,
         component: markRaw(targetItem.component),
       });
     }
-
-    // Remove tab from tabsList
     tabsList.value.splice(tabIndex + (targetItem.type !== 'placeholder' ? 1 : 0), 1);
-
-    // Reset tab if it was active
     if (tab.value === tabItem.value && tabsList.value.length > 0) {
       tab.value = tabsList.value[0].value;
     } else if (tabsList.value.length === 0) {
       tab.value = null;
     }
-
     draggedTab.value = null;
     draggedTabIndex.value = null;
   }
@@ -530,14 +517,34 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
   const placeholderIndex = placeHolderLayout.value.findIndex(item => item.id === placeholderId);
   if (placeholderIndex === -1) return;
 
+  // Handle hidden component drop to placeholder row 
+  if (draggedHiddenComponent.value) {
+    const targetItem = placeHolderLayout.value[placeholderIndex];
+    if (targetItem.type === 'placeholder') {
+      placeHolderLayout.value[placeholderIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: markRaw(draggedHiddenComponent.value.component),
+        cols: targetItem.cols,
+        title: draggedHiddenComponent.value.title,
+      };
+    }
+    const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
+    if(headingItem){
+      headingItem.icon = 'fa-solid fa-eye';
+    headingItem.visibility = true;
+    }
+    drag
+    draggedHiddenComponent.value = null;
+    return;
+  }
+
   // Handle component or placeholder drop from componentOrder
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
     const targetItem = placeHolderLayout.value[placeholderIndex];
-
     if (targetItem.type === 'placeholder') {
-      // Replace placeholder with component
       placeHolderLayout.value[placeholderIndex] = {
         id: placeholderId,
         type: dragged.type,
@@ -545,14 +552,12 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
         cols: targetItem.cols,
         title: dragged.title,
       };
-      // Replace dragged item in componentOrder with placeholder
       componentOrder.value.splice(fromIndex, 1, {
         id: dragged.id,
         type: 'placeholder',
         cols: dragged.cols,
       });
     } else {
-      // Swap with existing component in placeHolderLayout
       placeHolderLayout.value[placeholderIndex] = {
         id: placeholderId,
         type: dragged.type,
@@ -568,7 +573,6 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
         title: targetItem.title,
       });
     }
-
     draggedItem.value = null;
     draggedIndex.value = null;
   }
@@ -577,23 +581,19 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
   if (draggedPlaceholder.value) {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
-
-    // Swap within placeHolderLayout
     placeHolderLayout.value.splice(fromIndex, 1);
     placeHolderLayout.value.splice(placeholderIndex, 0, dragged);
-
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
   }
 
   // Handle tab drop
   if (draggedTab.value) {
+
     const tabItem = draggedTab.value;
     const tabIndex = draggedTabIndex.value;
     const targetItem = placeHolderLayout.value[placeholderIndex];
-
     if (targetItem.type === 'placeholder') {
-      // Replace placeholder with tab component
       placeHolderLayout.value[placeholderIndex] = {
         id: placeholderId,
         type: 'component',
@@ -602,7 +602,6 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
         title: tabItem.title,
       };
     } else {
-      // Swap tab with component
       placeHolderLayout.value[placeholderIndex] = {
         id: placeholderId,
         type: 'component',
@@ -610,24 +609,18 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
         cols: targetItem.cols,
         title: tabItem.title,
       };
-      // Add target component to tabsList at the dragged tab's index
       tabsList.value.splice(tabIndex, 0, {
         title: targetItem.title,
         value: `custom-${targetItem.id}-${Date.now()}`,
         component: markRaw(targetItem.component),
       });
     }
-
-    // Remove tab from tabsList
     tabsList.value.splice(tabIndex + (targetItem.type !== 'placeholder' ? 1 : 0), 1);
-
-    // Reset tab if it was active
     if (tab.value === tabItem.value && tabsList.value.length > 0) {
       tab.value = tabsList.value[0].value;
     } else if (tabsList.value.length === 0) {
       tab.value = null;
     }
-
     draggedTab.value = null;
     draggedTabIndex.value = null;
   }
@@ -636,33 +629,24 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
 // Drop handler for reordering tabs
 const onDropTab = (event, dropIndex) => {
   event.preventDefault();
-
   if (draggedTab.value) {
     const fromIndex = draggedTabIndex.value;
-
     if (fromIndex === dropIndex) return;
-
     const dragged = tabsList.value.splice(fromIndex, 1)[0];
     tabsList.value.splice(dropIndex, 0, dragged);
-
     draggedTab.value = null;
     draggedTabIndex.value = null;
   }
 
-  // Handle component drop to swap with tab
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
     const targetTab = tabsList.value[dropIndex];
-
-    // Replace tab with component
     tabsList.value[dropIndex] = {
       title: dragged.title,
       value: `custom-${dragged.id}-${Date.now()}`,
       component: markRaw(dragged.component),
     };
-
-    // Replace dragged item in componentOrder with tab component
     componentOrder.value.splice(fromIndex, 1, {
       id: dragged.id,
       type: 'component',
@@ -670,25 +654,19 @@ const onDropTab = (event, dropIndex) => {
       cols: dragged.cols,
       title: targetTab.title,
     });
-
     draggedItem.value = null;
     draggedIndex.value = null;
   }
 
-  // Handle placeholder drop to swap with tab
   if (draggedPlaceholder.value) {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
     const targetTab = tabsList.value[dropIndex];
-
-    // Replace tab with placeholder
     tabsList.value[dropIndex] = {
       title: 'Placeholder',
       value: `custom-${dragged.id}-${Date.now()}`,
       component: null,
     };
-
-    // Replace dragged placeholder in placeHolderLayout with tab component
     placeHolderLayout.value.splice(fromIndex, 1, {
       id: dragged.id,
       type: 'component',
@@ -696,7 +674,6 @@ const onDropTab = (event, dropIndex) => {
       cols: dragged.cols,
       title: targetTab.title,
     });
-
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
   }
@@ -705,33 +682,35 @@ const onDropTab = (event, dropIndex) => {
 // Drop handler for tabs
 const onDropToTabs = (event) => {
   event.preventDefault();
-  if (!draggedItem.value && !draggedPlaceholder.value) return;
+
+  if (draggedHiddenComponent.value) {
+    const tabValue = `custom-${uuidv4()}`;
+    tabsList.value.push({
+      title: draggedHiddenComponent.value.title,
+      value: tabValue,
+      component: markRaw(draggedHiddenComponent.value.component),
+    });
+    tab.value = tabValue;
+    draggedHiddenComponent.value = null;
+    return;
+  }
 
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
-
-    // Generate unique tab value and use component's title
     const tabValue = `custom-${dragged.id}-${Date.now()}`;
     const tabTitle = dragged.title;
-
-    // Add to tabsList
     tabsList.value.push({
       title: tabTitle,
       value: tabValue,
       component: markRaw(dragged.component),
     });
-
-    // Replace dragged item with placeholder in componentOrder
     componentOrder.value.splice(fromIndex, 1, {
       id: dragged.id,
       type: 'placeholder',
       cols: dragged.cols,
     });
-
-    // Activate the new tab
     tab.value = tabValue;
-
     draggedItem.value = null;
     draggedIndex.value = null;
   }
@@ -739,21 +718,14 @@ const onDropToTabs = (event) => {
   if (draggedPlaceholder.value) {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
-
-    // Add placeholder as a tab (no component)
     const tabValue = `custom-${dragged.id}-${Date.now()}`;
     tabsList.value.push({
       title: 'Placeholder',
       value: tabValue,
       component: null,
     });
-
-    // Remove placeholder from placeHolderLayout
     placeHolderLayout.value.splice(fromIndex, 1);
-
-    // Activate the new tab
     tab.value = tabValue;
-
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
   }
@@ -786,14 +758,12 @@ const addPlaceHolderRow = (col) => {
       cols,
     });
   });
-  showCard.value = false;
 };
 
 // Delete the col of placeholder
 const deletePlaceholderColumn = (id, index) => {
   const itemIndex = placeHolderLayout.value.findIndex(item => item.id === id);
   if (itemIndex === -1) return;
-
   placeHolderLayout.value.splice(itemIndex, 1);
   adjustPlaceholderWidth();
 };
@@ -805,9 +775,9 @@ const adjustPlaceholderWidth = () => {
   const count = visibleColumns.length;
 
   if (count === 0) return;
-
   const baseWidth = Math.floor(totalCols / count);
   const remainder = totalCols % count;
+
   placeHolderLayout.value.forEach((item, index) => {
     item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
   });
@@ -936,10 +906,12 @@ const adjustPlaceholderWidth = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+
 }
 
 .component-container {
   height: 100%;
   min-height: 600px;
+
 }
 </style>
