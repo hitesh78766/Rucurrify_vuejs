@@ -91,7 +91,7 @@
 
       </v-navigation-drawer>
 
-
+      <!-- component order row -->
       <v-row>
         <div class="d-flex flex-wrap w-100">
           <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
@@ -177,8 +177,12 @@
           @drop="onDropToTabs($event)">
           <VTab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
             :class="{ 'active-tab': tab === tabItem.value }" draggable="true"
-            @dragstart="onTabDragStart($event, tabItem, index)" @drop="onDropTab($event, index)">
-            {{ tabItem.title }}
+            @dragstart="onTabDragStart($event, tabItem, index)" @drop="onDropTab($event, index)"
+            @mouseenter="hoverTabDeleteIcon = tabItem.id" @mouseleave="hoverTabDeleteIcon = null">
+            <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
+            <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id" @click="deleteTab(index)">
+              <i class="fa-solid fa-trash"></i>
+            </span>
           </VTab>
         </VTabs>
 
@@ -192,6 +196,7 @@
     </v-main>
   </v-app>
 </template>
+
 
 <script setup>
 import { ref } from 'vue';
@@ -274,6 +279,7 @@ const hoverGrip = ref(null);
 const hoverPlaceholder = ref(null);
 const hoverGripPlaceHolder = ref(null);
 const showColumnWidthToggle = ref({});
+const hoverTabDeleteIcon = ref(null);
 
 const draggedItem = ref(null);
 const draggedIndex = ref(null);
@@ -286,16 +292,17 @@ const draggedHiddenComponent = ref(null);
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
 const tabsList = ref([
-  { title: 'Orders', value: 'orders', component: markRaw(OrderTab) },
-  { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab) },
-  { title: 'Billing', value: 'billing', component: markRaw(BillingTab) },
-  { title: 'Notifications', value: 'notifications', component: markRaw(Notification) },
-  { title: 'Email', value: 'email', component: markRaw(EmailTab) },
+  { title: 'Orders',  value: 'orders', component: markRaw(OrderTab), id: 1, },
+  { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab), id: 2, },
+  { title: 'Billing', value: 'billing', component: markRaw(BillingTab), id: 3, },
+  { title: 'Notifications', value: 'notifications', component: markRaw(Notification), id: 4, },
+  { title: 'Email', value: 'email', component: markRaw(EmailTab), id: 5, },
 ]);
 
 // function for toggle visibility of component 
 const hideShowComponent = (item) => {
   const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
+  // console.log("the heading item is :" , headingItem)
   if (!headingItem) return;
 
   if (headingItem.visibility) {
@@ -308,6 +315,8 @@ const hideShowComponent = (item) => {
     const componentIndex = componentOrder.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
+    // console.log("the component index is :" , componentIndex)
+
     if (componentIndex !== -1) {
       headingItem.storedComponent = {
         component: componentOrder.value[componentIndex].component,
@@ -428,6 +437,36 @@ const onHiddenComponentDragStart = (event, item) => {
 const deleteColumn = (id, index) => {
   componentOrder.value.splice(index, 1);
   adjustColumnWidths();
+};
+
+// delete the tab form the tab list 
+const deleteTab = (index) => {
+  const deletedTab = tabsList.value[index]; 
+  tabsList.value.splice(index, 1);
+
+  // Find the corresponding component in componentHeading
+  const headingItem = componentHeading.value.find((heading) => heading.component === deletedTab.component);
+
+  if (headingItem) {
+    // update icon visiblility and hide the component
+    headingItem.visibility = false;
+    headingItem.icon = 'fa-solid fa-eye-slash';
+
+    //  store  tab position for restore
+    headingItem.storedTab = {
+      title: deletedTab.title,
+      value: deletedTab.value,
+      component: deletedTab.component,
+      index: index,
+    };
+  }
+
+  // Update the active tab if the deleted tab was active
+  if (tab.value === deletedTab.value && tabsList.value.length > 0) {
+    tab.value = tabsList.value[0].value;
+  } else if (tabsList.value.length === 0) {
+    tab.value = null;
+  }
 };
 
 // Adjust the component cols after the deletion of the component cols
@@ -749,6 +788,20 @@ const onDropToTabs = (event) => {
       component: markRaw(draggedHiddenComponent.value.component),
     });
     tab.value = tabValue;
+
+    // Update visibility and icon in componentHeading
+    const headingItem = componentHeading.value.find(
+      (heading) => heading.component === draggedHiddenComponent.value.component
+    );
+    if (headingItem) {
+      headingItem.icon = 'fa-solid fa-eye';
+      headingItem.visibility = true;
+      // Clear stored positions
+      headingItem.storedComponent = null;
+      headingItem.storedPlaceholder = null;
+      headingItem.storedTab = null;
+    }
+
     draggedHiddenComponent.value = null;
     return;
   }
@@ -842,7 +895,6 @@ const adjustPlaceholderWidth = () => {
 };
 
 </script>
-
 
 
 <style scoped>
@@ -972,13 +1024,17 @@ const adjustPlaceholderWidth = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
 
+.trash-tab-delete-icon {
+  color: #c03131ed;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
 
 .component-container {
   height: 100%;
   min-height: 600px;
-
 }
 </style>
-
