@@ -449,6 +449,30 @@ const onHiddenComponentDragStart = (event, item) => {
 
 // Deleting component cols
 const deleteColumn = (id, index) => {
+  const deletedComponent = componentOrder.value[index];
+  
+  // Only proceed if the deleted item is a component (not a placeholder)
+  if (deletedComponent.type === 'component') {
+    // Find the corresponding component in componentHeading
+    const headingItem = componentHeading.value.find(
+      (heading) => heading.component === deletedComponent.component
+    );
+
+    if (headingItem) {
+      // Update visibility and icon
+      headingItem.visibility = false;
+      headingItem.icon = 'fa-solid fa-eye-slash';
+
+      // Store the component's position for restoration
+      headingItem.storedComponent = {
+        component: deletedComponent.component,
+        title: deletedComponent.title,
+        index: index,
+      };
+    }
+  }
+
+  // Remove the column and adjust widths
   componentOrder.value.splice(index, 1);
   adjustColumnWidths();
 };
@@ -930,6 +954,31 @@ const addPlaceHolderRow = (col) => {
 const deletePlaceholderColumn = (id, index) => {
   const itemIndex = placeHolderLayout.value.findIndex(item => item.id === id);
   if (itemIndex === -1) return;
+
+  const deletedPlaceholder = placeHolderLayout.value[itemIndex];
+
+  // Check if the placeholder contains a component
+  if (deletedPlaceholder.type === 'component') {
+    // Find the corresponding component in componentHeading
+    const headingItem = componentHeading.value.find(
+      (heading) => heading.component === deletedPlaceholder.component
+    );
+
+    if (headingItem) {
+      // Update visibility and icon
+      headingItem.visibility = false;
+      headingItem.icon = 'fa-solid fa-eye-slash';
+
+      // Store the component's position for restoration
+      headingItem.storedPlaceholder = {
+        component: deletedPlaceholder.component,
+        title: deletedPlaceholder.title,
+        index: itemIndex,
+      };
+    }
+  }
+
+  // Remove the placeholder and adjust widths
   placeHolderLayout.value.splice(itemIndex, 1);
   adjustPlaceholderWidth();
 };
