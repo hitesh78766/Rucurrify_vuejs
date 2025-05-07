@@ -1,4 +1,3 @@
-```vue
 <template>
   <v-app>
     <v-main class="main-wrapper">
@@ -147,7 +146,6 @@
           @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
           @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative" :draggable="true"
           @dragstart="onPlaceholderDragStart($event, item, index)">
-
           <v-tooltip text="Delete column" location="right">
             <template v-slot:activator="{ props }">
               <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
@@ -168,6 +166,22 @@
           <div v-else class="placeholder-cols">
             Drag the item
           </div>
+
+          <!-- Column width button for placeholder -->
+          <v-btn v-if="hoverGripPlaceHolder === item.id" color="warning" variant="tonal" class="width-btn" small
+            @click="toggleWidthOptions(item.id, 'placeholder')">
+            Column width
+          </v-btn>
+
+          <!-- Column width toggle for placeholder -->
+          <v-btn-toggle v-if="showColumnWidthToggle[item.id]" class="toggle-btns border-thin" v-model="toggle_exclusive"
+            small>
+            <v-btn @click="setColumnWidth(item.id, 4, 'placeholder')">33%</v-btn>
+            <v-btn @click="setColumnWidth(item.id, 6, 'placeholder')">50%</v-btn>
+            <v-btn @click="setColumnWidth(item.id, 8, 'placeholder')">66%</v-btn>
+            <v-btn @click="setColumnWidth(item.id, 12, 'placeholder')">100%</v-btn>
+            <v-btn @click="resetColumnWidth(item.id)">X</v-btn>
+          </v-btn-toggle>
         </v-col>
       </v-row>
 
@@ -292,7 +306,7 @@ const draggedHiddenComponent = ref(null);
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
 const tabsList = ref([
-  { title: 'Orders',  value: 'orders', component: markRaw(OrderTab), id: 1, },
+  { title: 'Orders', value: 'orders', component: markRaw(OrderTab), id: 1, },
   { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab), id: 2, },
   { title: 'Billing', value: 'billing', component: markRaw(BillingTab), id: 3, },
   { title: 'Notifications', value: 'notifications', component: markRaw(Notification), id: 4, },
@@ -441,7 +455,7 @@ const deleteColumn = (id, index) => {
 
 // delete the tab form the tab list 
 const deleteTab = (index) => {
-  const deletedTab = tabsList.value[index]; 
+  const deletedTab = tabsList.value[index];
   tabsList.value.splice(index, 1);
 
   // Find the corresponding component in componentHeading
@@ -534,7 +548,6 @@ const onDrop = (event, dropIndex) => {
     }
     draggedHiddenComponent.value = null;
     return;
-
   }
 
   // Handle component or placeholder drop from componentOrder
@@ -552,16 +565,35 @@ const onDrop = (event, dropIndex) => {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
     const targetItem = componentOrder.value[dropIndex];
-    if (targetItem.type === 'component') {
-      placeHolderLayout.value.splice(fromIndex, 1, {
-        id: dragged.id,
-        type: 'component',
-        component: markRaw(targetItem.component),
-        cols: dragged.cols,
-        title: targetItem.title,
-      });
-      componentOrder.value[dropIndex] = dragged;
+    if (dragged.type === 'component') {
+      // If dragging a component from placeHolderLayout
+      if (targetItem.type === 'component') {
+        placeHolderLayout.value.splice(fromIndex, 1, {
+          id: dragged.id,
+          type: 'component',
+          component: markRaw(targetItem.component),
+          cols: dragged.cols,
+          title: targetItem.title,
+        });
+        componentOrder.value[dropIndex] = {
+          id: targetItem.id,
+          type: 'component',
+          component: markRaw(dragged.component),
+          cols: targetItem.cols,
+          title: dragged.title,
+        };
+      } else {
+        placeHolderLayout.value.splice(fromIndex, 1);
+        componentOrder.value[dropIndex] = {
+          id: targetItem.id,
+          type: 'component',
+          component: markRaw(dragged.component),
+          cols: targetItem.cols,
+          title: dragged.title,
+        };
+      }
     } else {
+      // If dragging a placeholder from placeHolderLayout
       placeHolderLayout.value.splice(fromIndex, 1);
       componentOrder.value.splice(dropIndex, 0, dragged);
     }
@@ -830,12 +862,29 @@ const onDropToTabs = (event) => {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
     const tabValue = `custom-${dragged.id}-${Date.now()}`;
-    tabsList.value.push({
-      title: 'Placeholder',
-      value: tabValue,
-      component: null,
-    });
-    placeHolderLayout.value.splice(fromIndex, 1);
+    if (dragged.type === 'component') {
+      // If dragging a component from placeHolderLayout
+      tabsList.value.push({
+        title: dragged.title,
+        value: tabValue,
+        component: markRaw(dragged.component),
+        id: uuidv4(),
+      });
+      placeHolderLayout.value.splice(fromIndex, 1, {
+        id: dragged.id,
+        type: 'placeholder',
+        cols: dragged.cols,
+      });
+    } else {
+      // If dragging a placeholder from placeHolderLayout
+      tabsList.value.push({
+        title: 'Placeholder',
+        value: tabValue,
+        component: null,
+        id: uuidv4(),
+      });
+      placeHolderLayout.value.splice(fromIndex, 1);
+    }
     tab.value = tabValue;
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
@@ -843,18 +892,24 @@ const onDropToTabs = (event) => {
 };
 
 // Set column width
-const setColumnWidth = (id, width) => {
-  const component = componentOrder.value.find((item) => item.id === id);
-  if (component) {
-    component.cols = width;
+const setColumnWidth = (id, width, type = 'component') => {
+  if (type === 'component') {
+    const component = componentOrder.value.find((item) => item.id === id);
+    if (component) {
+      component.cols = width;
+    }
+  } else if (type === 'placeholder') {
+    const placeholder = placeHolderLayout.value.find((item) => item.id === id);
+    if (placeholder) {
+      placeholder.cols = width;
+    }
   }
 };
 
 // Toggle width options
-const toggleWidthOptions = (id) => {
+const toggleWidthOptions = (id, type = 'component') => {
   showColumnWidthToggle.value[id] = !showColumnWidthToggle.value[id];
 };
-
 // Reset column width
 const resetColumnWidth = (id) => {
   showColumnWidthToggle.value[id] = false;
@@ -893,7 +948,6 @@ const adjustPlaceholderWidth = () => {
     item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
   });
 };
-
 </script>
 
 
