@@ -47,6 +47,7 @@
                       <v-col v-for="col in 3" :key="col" cols="4">
                         <div class="placeholder-col"></div>
                       </v-col>
+
                     </div>
                     <div class="d-flex" @click="addPlaceHolderRow([6, 6])">
                       <v-col v-for="col in 2" :key="col" cols="6">
@@ -87,7 +88,6 @@
             </v-list>
           </v-tabs-window-item>
         </v-tabs-window>
-
       </v-navigation-drawer>
 
       <!-- component order row -->
@@ -121,7 +121,7 @@
             </div>
 
             <!-- Column width button -->
-            <v-btn v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'" color="warning"
+            <v-btn v-if="hoverGrip === componentItem.id " color="warning"
               variant="tonal" class="width-btn" small @click="toggleWidthOptions(componentItem.id)">
               Column width
             </v-btn>
@@ -205,12 +205,11 @@
             <component :is="tabItem.component" />
           </VWindowItem>
         </VWindow>
-      </div>
 
+      </div>
     </v-main>
   </v-app>
 </template>
-
 
 <script setup>
 import { ref } from 'vue';
@@ -316,7 +315,6 @@ const tabsList = ref([
 // function for toggle visibility of component 
 const hideShowComponent = (item) => {
   const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
-  // console.log("the heading item is :" , headingItem)
   if (!headingItem) return;
 
   if (headingItem.visibility) {
@@ -329,7 +327,6 @@ const hideShowComponent = (item) => {
     const componentIndex = componentOrder.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
-    // console.log("the component index is :" , componentIndex)
 
     if (componentIndex !== -1) {
       headingItem.storedComponent = {
@@ -450,7 +447,7 @@ const onHiddenComponentDragStart = (event, item) => {
 // Deleting component cols
 const deleteColumn = (id, index) => {
   const deletedComponent = componentOrder.value[index];
-  
+
   // Only proceed if the deleted item is a component (not a placeholder)
   if (deletedComponent.type === 'component') {
     // Find the corresponding component in componentHeading
@@ -522,7 +519,6 @@ const adjustColumnWidths = () => {
       item.cols = newWidth;
     }
   });
-
 };
 
 // Drag start handler for components and placeholders in componentOrder
@@ -589,38 +585,40 @@ const onDrop = (event, dropIndex) => {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
     const targetItem = componentOrder.value[dropIndex];
+
+    // Swap logic: Replace targetItem with dragged item, adopting targetItem's width
     if (dragged.type === 'component') {
-      // If dragging a component from placeHolderLayout
-      if (targetItem.type === 'component') {
-        placeHolderLayout.value.splice(fromIndex, 1, {
-          id: dragged.id,
-          type: 'component',
-          component: markRaw(targetItem.component),
-          cols: dragged.cols,
-          title: targetItem.title,
-        });
-        componentOrder.value[dropIndex] = {
-          id: targetItem.id,
-          type: 'component',
-          component: markRaw(dragged.component),
-          cols: targetItem.cols,
-          title: dragged.title,
-        };
-      } else {
-        placeHolderLayout.value.splice(fromIndex, 1);
-        componentOrder.value[dropIndex] = {
-          id: targetItem.id,
-          type: 'component',
-          component: markRaw(dragged.component),
-          cols: targetItem.cols,
-          title: dragged.title,
-        };
-      }
+      // Dragging a component from placeHolderLayout
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: markRaw(dragged.component),
+        cols: targetItem.cols, // Adopt targetItem's width
+        title: dragged.title,
+      };
+      placeHolderLayout.value[fromIndex] = {
+        id: dragged.id,
+        type: targetItem.type,
+        component: targetItem.type === 'component' ? markRaw(targetItem.component) : null,
+        cols: dragged.cols, // Retain original dragged cols for placeHolderLayout
+        title: targetItem.title,
+      };
     } else {
-      // If dragging a placeholder from placeHolderLayout
-      placeHolderLayout.value.splice(fromIndex, 1);
-      componentOrder.value.splice(dropIndex, 0, dragged);
+      // Dragging a placeholder from placeHolderLayout
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'placeholder',
+        cols: targetItem.cols, // Adopt targetItem's width
+      };
+      placeHolderLayout.value[fromIndex] = {
+        id: dragged.id,
+        type: targetItem.type,
+        component: targetItem.type === 'component' ? markRaw(targetItem.component) : null,
+        cols: dragged.cols, // Retain original dragged cols for placeHolderLayout
+        title: targetItem.title,
+      };
     }
+
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
   }
@@ -687,7 +685,6 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
       headingItem.icon = 'fa-solid fa-eye';
       headingItem.visibility = true;
     }
-    drag
     draggedHiddenComponent.value = null;
     return;
   }
@@ -742,7 +739,6 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
 
   // Handle tab drop
   if (draggedTab.value) {
-
     const tabItem = draggedTab.value;
     const tabIndex = draggedTabIndex.value;
     const targetItem = placeHolderLayout.value[placeholderIndex];
@@ -934,6 +930,7 @@ const setColumnWidth = (id, width, type = 'component') => {
 const toggleWidthOptions = (id, type = 'component') => {
   showColumnWidthToggle.value[id] = !showColumnWidthToggle.value[id];
 };
+
 // Reset column width
 const resetColumnWidth = (id) => {
   showColumnWidthToggle.value[id] = false;
@@ -997,8 +994,8 @@ const adjustPlaceholderWidth = () => {
     item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
   });
 };
-</script>
 
+</script>
 
 <style scoped>
 .back-btn {
@@ -1135,7 +1132,6 @@ const adjustPlaceholderWidth = () => {
   right: 0;
   top: 0;
 }
-
 .component-container {
   height: 100%;
   min-height: 600px;
