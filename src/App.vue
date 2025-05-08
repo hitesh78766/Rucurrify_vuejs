@@ -91,7 +91,15 @@
       </v-navigation-drawer>
 
       <!-- component order row -->
-      <v-row>
+      <v-row :class="{ 'component-order-row': componentOrder.length > 0 }" @mouseenter="hoverRow = true" @mouseleave="hoverRow = false">
+        <v-tooltip text="Delete entire row" location="left">
+          <template v-slot:activator="{ props }">
+            <div class="trash-row" v-if="hoverRow" v-bind="props" @click="deleteComponentRow">
+              <i class="fa-solid fa-trash"></i>
+            </div>
+          </template>
+        </v-tooltip>
+        
         <div class="d-flex flex-wrap w-100">
           <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
             @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
@@ -121,8 +129,8 @@
             </div>
 
             <!-- Column width button -->
-            <v-btn v-if="hoverGrip === componentItem.id " color="warning"
-              variant="tonal" class="width-btn" small @click="toggleWidthOptions(componentItem.id)">
+            <v-btn v-if="hoverGrip === componentItem.id" color="warning" variant="tonal" class="width-btn" small
+              @click="toggleWidthOptions(componentItem.id)">
               Column width
             </v-btn>
 
@@ -211,6 +219,8 @@
   </v-app>
 </template>
 
+
+
 <script setup>
 import { ref } from 'vue';
 import { markRaw } from 'vue';
@@ -293,6 +303,7 @@ const hoverPlaceholder = ref(null);
 const hoverGripPlaceHolder = ref(null);
 const showColumnWidthToggle = ref({});
 const hoverTabDeleteIcon = ref(null);
+const hoverRow = ref(false);
 
 const draggedItem = ref(null);
 const draggedIndex = ref(null);
@@ -301,6 +312,7 @@ const draggedTabIndex = ref(null);
 const draggedPlaceholder = ref(null);
 const draggedPlaceholderIndex = ref(null);
 const draggedHiddenComponent = ref(null);
+
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
@@ -995,6 +1007,26 @@ const adjustPlaceholderWidth = () => {
   });
 };
 
+// delete the component order row 
+const deleteComponentRow = () => {
+  componentOrder.value.forEach((item, index) => {
+    if (item.type === 'component') {
+      const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
+      if (headingItem) {
+        headingItem.visibility = false;
+        headingItem.icon = 'fa-solid fa-eye-slash';
+        headingItem.storedComponent = {
+          component: item.component,
+          title: item.title,
+          index: index,
+        };
+      }
+    }
+  });
+
+  componentOrder.value = [];
+};
+
 </script>
 
 <style scoped>
@@ -1132,8 +1164,23 @@ const adjustPlaceholderWidth = () => {
   right: 0;
   top: 0;
 }
+
 .component-container {
   height: 100%;
   min-height: 600px;
+}
+
+.trash-row {
+  position: absolute;
+  z-index: 10;
+  top: 50px;
+  left: 50%;
+  color: #c03131ed;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.component-order-row {
+  border: 1px solid blue;
 }
 </style>
