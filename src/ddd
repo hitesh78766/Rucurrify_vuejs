@@ -1,13 +1,10 @@
 <template>
   <v-app>
     <v-main class="main-wrapper">
-      <!-- <Header /> -->
-
       <div class="d-flex justify-content-between mb-4">
         <div>
           <h4 class="text-h4 customer">Customer ID #101</h4>
         </div>
-
         <div class="d-flex">
           <v-btn class="me-3 back-btn">
             <i class="fa-solid fa-arrow-left me-2"></i>Back
@@ -31,14 +28,11 @@
             <i class="fa-solid fa-xmark"></i>
           </div>
         </v-tabs>
-
         <v-divider class="m-0"></v-divider>
-
         <v-tabs-window v-model="tabs">
           <v-tabs-window-item value="one">
             <div class="mt-2">
               <h6 class="m-0 mt-4 text-center">Select Placeholders Columns</h6>
-              <!-- Placeholder card -->
               <div class="mt-3 w-100 d-flex align-items-center justify-content-center">
                 <v-card class="placeholder-card mb-2" width="300" elevation="5">
                   <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
@@ -71,7 +65,6 @@
               </div>
             </div>
           </v-tabs-window-item>
-
           <v-tabs-window-item value="two">
             <v-list density="compact" nav>
               <v-list-item>
@@ -89,149 +82,143 @@
         </v-tabs-window>
       </v-navigation-drawer>
 
-      <!-- component order row -->
-      <v-row :class="{ 'component-order-row': componentOrder.length > 0 }" @mouseenter="hoverRow = true"
-        @mouseleave="hoverRow = false">
-
-        <v-tooltip text="Add Placeholder" location="top">
-          <template v-slot:activator="{ props }">
-            <div class="placeholder-row" v-if="hoverRow" v-bind="props" @click="drawer = true">
-              <i class="fa-solid fa-plus"></i>
-            </div>
-          </template>
-        </v-tooltip>
-
-        <v-tooltip text="Dublicate Row" location="top">
-          <template v-slot:activator="{ props }">
-            <div class="dublicate-row" v-if="hoverRow" v-bind="props" @click="addPlaceHolderRow([4, 4, 4])">
-              <i class="fa-solid fa-clone"></i>
-            </div>
-          </template>
-        </v-tooltip>
-
-        <v-tooltip text="Delete entire row" location="left">
-          <template v-slot:activator="{ props }">
-            <div class="trash-row" v-if="hoverRow" v-bind="props" @click="deleteComponentRow">
-              <i class="fa-solid fa-trash"></i>
-            </div>
-          </template>
-        </v-tooltip>
-
-        <div class="d-flex flex-wrap w-100">
-          <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
-            @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
-            :draggable="true" @dragstart="onDragStart($event, componentItem, index)" @dragover="onDragOver($event)"
-            @drop="onDrop($event, index)">
-
-            <v-tooltip text="Delete column" location="top">
+      <!-- dynamic layout order  -->
+      <div v-for="(section, index) in sectionOrder" :key="index">
+        <div v-if="section === 'componentOrder'">
+          <!-- component order row -->
+          <v-row :class="{ 'component-order-row': componentOrder.length > 0 }" @mouseenter="hoverRow = true"
+            @mouseleave="hoverRow = false" :draggable="true" @dragstart="onSectionDragStart($event, 'componentOrder')"
+            @dragover="onDragOver($event)" @drop="onSectionDrop($event, 'componentOrder')">
+            <v-tooltip text="Add Placeholder" location="top">
               <template v-slot:activator="{ props }">
-                <div class="trash-column" v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'"
-                  v-bind="props" @click="deleteColumn(componentItem.id, index)">
+                <div class="placeholder-row" v-if="hoverRow" v-bind="props" @click="drawer = true">
+                  <i class="fa-solid fa-plus"></i>
+                </div>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Dublicate Row" location="top">
+              <template v-slot:activator="{ props }">
+                <div class="dublicate-row" v-if="hoverRow" v-bind="props" @click="addPlaceHolderRow([4, 4, 4])">
+                  <i class="fa-solid fa-clone"></i>
+                </div>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Delete entire row" location="left">
+              <template v-slot:activator="{ props }">
+                <div class="trash-row" v-if="hoverRow" v-bind="props" @click="deleteComponentRow">
                   <i class="fa-solid fa-trash"></i>
                 </div>
               </template>
             </v-tooltip>
-
-            <!-- Grip for dragging -->
-            <div v-if="hoverGrip === componentItem.id" class="grip position-absolute">
-              <i class="fa-solid fa-grip-vertical"></i>
+            <v-tooltip text="Drag entire row" location="top">
+              <template v-slot:activator="{ props }">
+                <div class="grip-row" v-if="hoverRow" v-bind="props">
+                  <i class="fa-solid fa-grip-vertical"></i>
+                </div>
+              </template>
+            </v-tooltip>
+            <div class="d-flex flex-wrap w-100">
+              <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
+                @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
+                :draggable="true" @dragstart="onDragStart($event, componentItem, index)" @dragover="onDragOver($event)"
+                @drop="onDrop($event, index)">
+                <v-tooltip text="Delete column" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div class="trash-column"
+                      v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'" v-bind="props"
+                      @click="deleteColumn(componentItem.id, index)">
+                      <i class="fa-solid fa-trash"></i>
+                    </div>
+                  </template>
+                </v-tooltip>
+                <div v-if="hoverGrip === componentItem.id" class="grip position-absolute">
+                  <i class="fa-solid fa-grip-vertical"></i>
+                </div>
+                <component v-if="componentItem.type === 'component'" :is="componentItem.component"
+                  class="component-container" />
+                <div v-else-if="componentItem.type === 'placeholder'" class="placeholder-cols">
+                  Drag the item
+                </div>
+                <v-btn v-if="hoverGrip === componentItem.id" color="warning" variant="tonal" class="width-btn" small
+                  @click="toggleWidthOptions(componentItem.id)">
+                  Column width
+                </v-btn>
+                <v-btn-toggle v-if="showColumnWidthToggle[componentItem.id]" class="toggle-btns border-thin"
+                  v-model="toggle_exclusive" small>
+                  <v-btn @click="setColumnWidth(componentItem.id, 4)">33%</v-btn>
+                  <v-btn @click="setColumnWidth(componentItem.id, 6)">50%</v-btn>
+                  <v-btn @click="setColumnWidth(componentItem.id, 8)">66%</v-btn>
+                  <v-btn @click="setColumnWidth(componentItem.id, 12)">100%</v-btn>
+                  <v-btn @click="resetColumnWidth(componentItem.id)">X</v-btn>
+                </v-btn-toggle>
+              </v-col>
             </div>
+          </v-row>
 
-            <!-- Show component or placeholder -->
-            <component v-if="componentItem.type === 'component'" :is="componentItem.component"
-              class="component-container" />
-
-            <div v-else-if="componentItem.type === 'placeholder'" class="placeholder-cols">
-              Drag the item
-            </div>
-
-            <!-- Column width button -->
-            <v-btn v-if="hoverGrip === componentItem.id" color="warning" variant="tonal" class="width-btn" small
-              @click="toggleWidthOptions(componentItem.id)">
-              Column width
-            </v-btn>
-
-            <!-- Column width toggle -->
-            <v-btn-toggle v-if="showColumnWidthToggle[componentItem.id]" class="toggle-btns border-thin"
-              v-model="toggle_exclusive" small>
-              <v-btn @click="setColumnWidth(componentItem.id, 4)">33%</v-btn>
-              <v-btn @click="setColumnWidth(componentItem.id, 6)">50%</v-btn>
-              <v-btn @click="setColumnWidth(componentItem.id, 8)">66%</v-btn>
-              <v-btn @click="setColumnWidth(componentItem.id, 12)">100%</v-btn>
-              <v-btn @click="resetColumnWidth(componentItem.id)">X</v-btn>
-            </v-btn-toggle>
-          </v-col>
-        </div>
-      </v-row>
-
-      <!-- Dynamic placeholder row -->
-      <v-row>
-        <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols" @dragover="onDragOver($event)"
-          @drop="onDropToPlaceholder($event, item.id, index)"
-          @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
-          @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative" :draggable="true"
-          @dragstart="onPlaceholderDragStart($event, item, index)">
-          <v-tooltip text="Delete column" location="right">
-            <template v-slot:activator="{ props }">
-              <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
-                @click="deletePlaceholderColumn(item.id, index)">
-                <i class="fa-solid fa-trash"></i>
+          <!-- Dynamic placeholder row -->
+          <v-row v-if="placeHolderLayout.length > 0">
+            <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols"
+              @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id, index)"
+              @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
+              @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative"
+              :draggable="true" @dragstart="onPlaceholderDragStart($event, item, index)">
+              <v-tooltip text="Delete column" location="right">
+                <template v-slot:activator="{ props }">
+                  <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
+                    @click="deletePlaceholderColumn(item.id, index)">
+                    <i class="fa-solid fa-trash"></i>
+                  </div>
+                </template>
+              </v-tooltip>
+              <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder">
+                <i class="fa-solid fa-grip-vertical"></i>
               </div>
-            </template>
-          </v-tooltip>
+              <div v-if="item.type === 'component'" class="component-container">
+                <component :is="item.component" />
+              </div>
+              <div v-else class="placeholder-cols">
+                Drag the item
+              </div>
+              <v-btn v-if="hoverGripPlaceHolder === item.id" color="warning" variant="tonal" class="width-btn" small
+                @click="toggleWidthOptions(item.id, 'placeholder')">
+                Column width
+              </v-btn>
+              <v-btn-toggle v-if="showColumnWidthToggle[item.id]" class="toggle-btns border-thin"
+                v-model="toggle_exclusive" small>
+                <v-btn @click="setColumnWidth(item.id, 4, 'placeholder')">33%</v-btn>
+                <v-btn @click="setColumnWidth(item.id, 6, 'placeholder')">50%</v-btn>
+                <v-btn @click="setColumnWidth(item.id, 8, 'placeholder')">66%</v-btn>
+                <v-btn @click="setColumnWidth(item.id, 12, 'placeholder')">100%</v-btn>
+                <v-btn @click="resetColumnWidth(item.id)">X</v-btn>
+              </v-btn-toggle>
+            </v-col>
+          </v-row>
+        </div>
 
-          <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder">
-            <i class="fa-solid fa-grip-vertical"></i>
-          </div>
-
-          <div v-if="item.type === 'component'" class="component-container">
-            <component :is="item.component" />
-          </div>
-
-          <div v-else class="placeholder-cols">
-            Drag the item
-          </div>
-
-          <!-- Column width button for placeholder -->
-          <v-btn v-if="hoverGripPlaceHolder === item.id" color="warning" variant="tonal" class="width-btn" small
-            @click="toggleWidthOptions(item.id, 'placeholder')">
-            Column width
-          </v-btn>
-
-          <!-- Column width toggle for placeholder -->
-          <v-btn-toggle v-if="showColumnWidthToggle[item.id]" class="toggle-btns border-thin" v-model="toggle_exclusive"
-            small>
-            <v-btn @click="setColumnWidth(item.id, 4, 'placeholder')">33%</v-btn>
-            <v-btn @click="setColumnWidth(item.id, 6, 'placeholder')">50%</v-btn>
-            <v-btn @click="setColumnWidth(item.id, 8, 'placeholder')">66%</v-btn>
-            <v-btn @click="setColumnWidth(item.id, 12, 'placeholder')">100%</v-btn>
-            <v-btn @click="resetColumnWidth(item.id)">X</v-btn>
-          </v-btn-toggle>
-        </v-col>
-      </v-row>
-
-      <!-- Tabs with drag-and-drop support -->
-      <div class="mt-4">
-        <VTabs v-model="tab" background-color="primary" dark class="mb-3" @dragover="onDragOver($event)"
-          @drop="onDropToTabs($event)">
-          <VTab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
-            :class="{ 'active-tab': tab === tabItem.value }" draggable="true"
-            @dragstart="onTabDragStart($event, tabItem, index)" @drop="onDropTab($event, index)"
-            @mouseenter="hoverTabDeleteIcon = tabItem.id" @mouseleave="hoverTabDeleteIcon = null">
-            <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
-            <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id" @click="deleteTab(index)">
-              <i class="fa-solid fa-trash"></i>
-            </span>
-          </VTab>
-        </VTabs>
-
-        <VWindow v-model="tab" :touch="false">
-          <VWindowItem v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value">
-            <component :is="tabItem.component" />
-          </VWindowItem>
-        </VWindow>
-
+        <div v-if="section === 'tabsList'" class="mt-4 mb-4" :draggable="true"
+          @dragstart="onSectionDragStart($event, 'tabsList')" @dragover="onDragOver($event)"
+          @drop="onSectionDrop($event, 'tabsList')">
+          <VTabs v-model="tab" background-color="primary" dark class="mb-3" @dragover="onDragOver($event)"
+            @drop="onDropToTabs($event)">
+            <VTab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
+              :class="{ 'active-tab': tab === tabItem.value }" draggable="true"
+              @dragstart="onTabDragStart($event, tabItem, index)" @drop="onDropTab($event, index)"
+              @mouseenter="hoverTabDeleteIcon = tabItem.id" @mouseleave="hoverTabDeleteIcon = null">
+              <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
+              <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id" @click="deleteTab(index)">
+                <i class="fa-solid fa-trash"></i>
+              </span>
+            </VTab>
+          </VTabs>
+          <VWindow v-model="tab" :touch="false">
+            <VWindowItem v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value">
+              <component :is="tabItem.component" />
+            </VWindowItem>
+          </VWindow>
+        </div>
       </div>
+
+
     </v-main>
   </v-app>
 </template>
@@ -245,6 +232,24 @@ import { v4 as uuidv4 } from 'uuid';
 
 const drawer = ref(false);
 const tabs = ref('one');
+
+// dynamic component order show
+const sectionOrder = ref(['componentOrder', 'tabsList']);
+const draggedSection = ref(null);
+
+const onSectionDragStart = (event, section) => {
+  draggedSection.value = section;
+  event.dataTransfer.setData('section', section);
+};
+
+const onSectionDrop = (event, targetSection) => {
+  event.preventDefault();
+  const droppedSection = event.dataTransfer.getData('section');
+  if (droppedSection && droppedSection !== targetSection && draggedSection.value === droppedSection) {
+    sectionOrder.value = sectionOrder.value[0] === 'componentOrder' ? ['tabsList', 'componentOrder'] : ['componentOrder', 'tabsList'];
+  }
+  draggedSection.value = null;
+};
 
 const componentHeading = ref([
   {
@@ -329,6 +334,9 @@ const draggedTabIndex = ref(null);
 const draggedPlaceholder = ref(null);
 const draggedPlaceholderIndex = ref(null);
 const draggedHiddenComponent = ref(null);
+
+
+
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
@@ -941,42 +949,15 @@ const onDropToTabs = (event) => {
 
 // Set column width
 const setColumnWidth = (id, width, type = 'component') => {
-  let layout = type === 'component' ? componentOrder.value : placeHolderLayout.value;
-  const item = layout.find((item) => item.id === id);
-  if (!item) return;
-
-  // Set the new width
-  item.cols = width;
-
-  // Calculate total cols in the current row
-  let totalCols = layout.reduce((sum, curr) => sum + curr.cols, 0);
-
-  // if cols > 12 add placeholder for remaining space
-  if (totalCols > 12) {
-    // Find the point where cols exceed 12
-    let currentSum = 0;
-    let breakIndex = layout.length;
-    for (let i = 0; i < layout.length; i++) {
-      currentSum += layout[i].cols;
-      if (currentSum > 12) {
-        breakIndex = i;
-        break;
-      }
+  if (type === 'component') {
+    const component = componentOrder.value.find((item) => item.id === id);
+    if (component) {
+      component.cols = width;
     }
-
-    // if line vreak calculate remaining col in the next row
-    if (breakIndex < layout.length) {
-      const nextRowCols = layout.slice(breakIndex).reduce((sum, curr) => sum + curr.cols, 0);
-      const remainingCols = 12 - (nextRowCols % 12 || nextRowCols);
-
-      // add placeholder in remaining col in the next row
-      if (remainingCols > 0) {
-        layout.push({
-          id: uuidv4(),
-          type: 'placeholder',
-          cols: remainingCols,
-        });
-      }
+  } else if (type === 'placeholder') {
+    const placeholder = placeHolderLayout.value.find((item) => item.id === id);
+    if (placeholder) {
+      placeholder.cols = width;
     }
   }
 };
@@ -1237,7 +1218,7 @@ const deleteComponentRow = () => {
   position: absolute;
   z-index: 10;
   top: 50px;
-  left: calc(50% + 40px);
+  left: calc(50% + 60px);
   color: #555;
   cursor: pointer;
   font-size: 15px;
@@ -1247,7 +1228,7 @@ const deleteComponentRow = () => {
   position: absolute;
   z-index: 10;
   top: 50px;
-  left: calc(50% + 20px);
+  left: calc(50% + 40px);
   color: #555;
   cursor: pointer;
   font-size: 15px;
