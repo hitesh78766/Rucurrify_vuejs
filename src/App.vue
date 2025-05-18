@@ -94,8 +94,9 @@
         @drop="onSectionDrop($event, index)">
         <!-- Component Order Row -->
         <v-row v-if="section.type === 'componentOrder'"
-          :class="{ 'component-order-row mt-3 ': componentOrder.length > 0 }" @mouseenter="hoverRow = true"
+          :class="{ 'component-order-row mt-3': componentOrder.length > 0 }" @mouseenter="hoverRow = true"
           @mouseleave="hoverRow = false" draggable="true" @dragstart="onSectionDragStart($event, section, index)">
+
           <v-tooltip text="Add Placeholder" location="top">
             <template v-slot:activator="{ props }">
               <div class="placeholder-row" v-if="hoverRow" v-bind="props" @click="drawer = true">
@@ -127,10 +128,10 @@
           </v-tooltip>
 
           <div class="d-flex flex-wrap w-100">
-            <v-col v-for="(componentItem, index) in componentOrder" :key="index" :cols="componentItem.cols"
-              @mouseenter="hoverGrip = componentItem.id" @mouseleave="hoverGrip = null" class="position-relative"
-              :draggable="true" @dragstart="onDragStart($event, componentItem, index)" @dragover="onDragOver($event)"
-              @drop="onDrop($event, index)">
+            <v-col v-for="(componentItem, index) in componentOrder" :key="componentItem.id" :cols="componentItem.cols"
+              @mouseenter="onMouseEnter(componentItem.id)" @mouseleave="onMouseLeave" @dragover="onDragOver($event)"
+              @drop="onDrop($event, index)" class="position-relative">
+              <!-- delete column -->
               <v-tooltip text="Delete column" location="top">
                 <template v-slot:activator="{ props }">
                   <div class="trash-column"
@@ -140,7 +141,18 @@
                   </div>
                 </template>
               </v-tooltip>
-              <!-- adding the placeholder  -->
+
+              <!-- drag component icon -->
+              <v-tooltip text="Drag Component" location="top">
+                <template v-slot:activator="{ props }">
+                  <div class="drag-component"
+                    v-if="hoverGrip === componentItem.id && componentItem.type !== 'placeholder'" v-bind="props">
+                    <i class="fa-solid fa-layer-group"></i>
+                  </div>
+                </template>
+              </v-tooltip>
+
+              <!-- duplicate column -->
               <v-tooltip text="Duplicate column" location="top">
                 <template v-slot:activator="{ props }">
                   <div class="dublicate-component-column"
@@ -151,17 +163,46 @@
                 </template>
               </v-tooltip>
 
-
-              <div v-if="hoverGrip === componentItem.id" class="grip position-absolute">
-                <i class="fa-solid fa-grip-vertical"></i>
-              </div>
+              <!-- drag column -->
+              <v-tooltip text="Drag column" location="top">
+                <template v-slot:activator="{ props }">
+                  <div v-if="hoverGrip === componentItem.id" class="grip position-absolute" v-bind="props"
+                    :draggable="true" @dragstart="onDragStart($event, componentItem, index)">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                  </div>
+                </template>
+              </v-tooltip>
 
               <component v-if="componentItem.type === 'component'" :is="componentItem.component"
                 class="component-container" />
 
+
               <div v-else-if="componentItem.type === 'placeholder'" class="placeholder-cols">
                 Drag the item
               </div>
+
+
+              <div v-else-if="componentItem.type === 'tabsList'" class="component-container">
+                <v-tabs v-model="tabStates[componentItem.id]" background-color="primary" dark class="mb-3">
+                  <v-tab v-for="(tabItem, tabIndex) in componentItem.tabsList" :key="tabIndex" :value="tabItem.value"
+                    :class="{ 'active-tab': tabStates[componentItem.id] === tabItem.value }" draggable="true"
+                    @dragstart="onTabDragStart($event, tabItem, tabIndex)" @drop="onDropTab($event, tabIndex)"
+                    @mouseenter="hoverTabDeleteIcon = tabItem.id" @mouseleave="hoverTabDeleteIcon = null">
+                    <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
+                    <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id"
+                      @click="deleteTab(tabIndex, { value: componentItem.tabsList }, { value: tabStates[componentItem.id] })">
+                      <i class="fa-solid fa-trash"></i>
+                    </span>
+                  </v-tab>
+                </v-tabs>
+                <v-window v-model="tabStates[componentItem.id]" :touch="false">
+                  <v-window-item v-for="(tabItem, tabIndex) in componentItem.tabsList" :key="tabIndex"
+                    :value="tabItem.value">
+                    <component :is="tabItem.component" />
+                  </v-window-item>
+                </v-window>
+              </div>
+
               <v-btn v-if="hoverGrip === componentItem.id" color="warning" variant="tonal" class="width-btn" small
                 @click="toggleWidthOptions(componentItem.id)">
                 Column width
@@ -180,11 +221,10 @@
 
         <!-- Dynamic placeholder row -->
         <v-row class="" v-if="section.type === 'componentOrder'">
-          <v-col v-for="(item, index) in placeHolderLayout" :key="index" :cols="item.cols"
+          <v-col v-for="(item, index) in placeHolderLayout" :key="item.id" :cols="item.cols"
             @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id, index)"
-            @mouseenter="hoverPlaceholder = item.id; hoverGripPlaceHolder = item.id"
-            @mouseleave="hoverPlaceholder = null; hoverGripPlaceHolder = null" class="position-relative"
-            :draggable="true" @dragstart="onPlaceholderDragStart($event, item, index)">
+            @mouseenter="onMouseEnterPlaceholder(item.id)" @mouseleave="onMouseLeavePlaceholder"
+            class="position-relative">
             <v-tooltip text="Delete column" location="right">
               <template v-slot:activator="{ props }">
                 <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
@@ -196,19 +236,45 @@
             <v-tooltip text="Duplicate column" location="right">
               <template v-slot:activator="{ props }">
                 <div class="dublicate-component-column"
-                  v-if="hoverGripPlaceHolder === item.id && item.type !== 'placeholder'" v-bind="props"
-                  >
+                  v-if="hoverGripPlaceHolder === item.id && item.type !== 'placeholder'" v-bind="props">
                   <i class="fa-solid fa-clone" @click="duplicatePlaceholderColumn(item, index)"></i>
                 </div>
               </template>
             </v-tooltip>
 
-            <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder">
-              <i class="fa-solid fa-grip-vertical"></i>
-            </div>
+            <v-tooltip text="Drag column" location="right">
+              <template v-slot:activator="{ props }">
+                <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder" v-bind="props"
+                  :draggable="true" @dragstart="onPlaceholderDragStart($event, item, index)">
+                  <i class="fa-solid fa-grip-vertical"></i>
+                </div>
+              </template>
+            </v-tooltip>
 
             <div v-if="item.type === 'component'" class="component-container">
               <component :is="item.component" />
+            </div>
+
+            <!-- for make the tabs of all the components in the placeholder 12 -->
+            <div v-else-if="item.type === 'tabsList'" class="component-container">
+              <v-tabs v-model="tabStates[item.id]" background-color="primary" dark class="mb-3">
+                <v-tab v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value"
+                  :class="{ 'active-tab': tabStates[item.id] === tabItem.value }" draggable="true"
+                  @dragstart="onTabDragStart($event, tabItem, tabIndex, item.id)"
+                  @drop="onDropTab($event, tabIndex, item.id)" @mouseenter="hoverTabDeleteIcon = tabItem.id"
+                  @mouseleave="hoverTabDeleteIcon = null">
+                  <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
+                  <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id"
+                    @click="deleteTab(tabIndex, { value: item.tabsList }, { value: tabStates[item.id] })">
+                    <i class="fa-solid fa-trash"></i>
+                  </span>
+                </v-tab>
+              </v-tabs>
+              <v-window v-model="tabStates[item.id]" :touch="false">
+                <v-window-item v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value">
+                  <component :is="tabItem.component" />
+                </v-window-item>
+              </v-window>
             </div>
 
             <div v-else class="placeholder-cols">
@@ -270,6 +336,16 @@
             </template>
           </v-tooltip>
 
+          <!-- drag all column of tabs -->
+          <v-tooltip text="Drag All columns" location="left">
+            <template v-slot:activator="{ props }">
+              <div class="drag-all-column" v-if="hoverTablistRow" v-bind="props" draggable="true"
+                @dragstart="onAllTabsDragStart($event)">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+            </template>
+          </v-tooltip>
+
           <VTabs v-model="tab" background-color="primary" dark class="mb-3" @dragover="onDragOver($event)"
             @drop="onDropToTabs($event)">
             <VTab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
@@ -291,8 +367,6 @@
 
       </div>
 
-
-
     </v-main>
   </v-app>
 </template>
@@ -303,7 +377,6 @@
 import { ref } from 'vue';
 import { markRaw } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
-
 
 const drawer = ref(false);
 const tabs = ref('one');
@@ -357,6 +430,12 @@ const componentHeading = ref([
     component: EmailTab,
     visibility: true
   },
+  {
+    title: "Tabs",
+    icon: 'fa-solid fa-eye-slash',
+    visibility: false,
+    storedTabsList: null,
+  },
 ]);
 
 const placeHolderLayout = ref([]);
@@ -403,9 +482,30 @@ const tabsList = ref([
   { title: 'Email', value: 'email', component: markRaw(EmailTab), id: 5, },
 ]);
 
+const isDraggingAllTabs = ref(false);
+
+const onMouseEnter = (id) => {
+  hoverGrip.value = id;
+};
+
+const onMouseLeave = () => {
+  hoverGrip.value = null;
+};
+
+const onMouseEnterPlaceholder = (id) => {
+  hoverGripPlaceHolder.value = id;
+  hoverPlaceholder.value = id;
+};
+
+const onMouseLeavePlaceholder = () => {
+  hoverGripPlaceHolder.value = null;
+  hoverPlaceholder.value = null;
+};
+
+
 // function for toggle visibility of component 
 const hideShowComponent = (item) => {
-  const headingItem = componentHeading.value.find((heading) => heading.component === item.component);
+  const headingItem = componentHeading.value.find((heading) => heading.component === item.component || heading.title === item.title);
   if (!headingItem) return;
 
   if (headingItem.visibility) {
@@ -418,12 +518,12 @@ const hideShowComponent = (item) => {
     const componentIndex = componentOrder.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
-
     if (componentIndex !== -1) {
       headingItem.storedComponent = {
         component: componentOrder.value[componentIndex].component,
         title: componentOrder.value[componentIndex].title,
         index: componentIndex,
+        cols: componentOrder.value[componentIndex].cols,
       };
       componentOrder.value[componentIndex] = {
         id: componentOrder.value[componentIndex].id,
@@ -432,7 +532,7 @@ const hideShowComponent = (item) => {
       };
     }
 
-    // Check in placeHolderLayout
+    // Check in placeHolderLayout (for components)
     const placeholderIndex = placeHolderLayout.value.findIndex(
       (component) => component.component === item.component && component.type === 'component'
     );
@@ -441,6 +541,7 @@ const hideShowComponent = (item) => {
         component: placeHolderLayout.value[placeholderIndex].component,
         title: placeHolderLayout.value[placeholderIndex].title,
         index: placeholderIndex,
+        cols: placeHolderLayout.value[placeholderIndex].cols,
       };
       placeHolderLayout.value[placeholderIndex] = {
         id: placeHolderLayout.value[placeholderIndex].id,
@@ -449,7 +550,7 @@ const hideShowComponent = (item) => {
       };
     }
 
-    // Check in tabsList
+    // Check in tabsList (main tabs section)
     const tabIndex = tabsList.value.findIndex((tabItem) => tabItem.component === item.component);
     if (tabIndex !== -1) {
       headingItem.storedTab = {
@@ -457,6 +558,7 @@ const hideShowComponent = (item) => {
         value: tabsList.value[tabIndex].value,
         component: tabsList.value[tabIndex].component,
         index: tabIndex,
+        tabsListId: null, // Main tabsList
       };
       const removedTab = tabsList.value[tabIndex];
       tabsList.value.splice(tabIndex, 1);
@@ -466,13 +568,56 @@ const hideShowComponent = (item) => {
       }
     }
 
+    // Check in placeHolderLayout's tabsList (cols="12" tabs)
+    let tabsListIndex = -1;
+    let tabsListId = null;
+    placeHolderLayout.value.forEach((layoutItem, layoutIndex) => {
+      if (layoutItem.type === 'tabsList') {
+        const foundIndex = layoutItem.tabsList.findIndex((tabItem) => tabItem.component === item.component);
+        if (foundIndex !== -1) {
+          tabsListIndex = foundIndex;
+          tabsListId = layoutItem.id;
+        }
+      }
+    });
+
+    if (tabsListIndex !== -1 && tabsListId) {
+      const targetTabsList = placeHolderLayout.value.find(item => item.id === tabsListId).tabsList;
+      headingItem.storedTab = {
+        title: targetTabsList[tabsListIndex].title,
+        value: targetTabsList[tabsListIndex].value,
+        component: targetTabsList[tabsListIndex].component,
+        index: tabsListIndex,
+        tabsListId: tabsListId, // Store tabsListId to restore in correct tabsList
+      };
+      const removedTab = targetTabsList[tabsListIndex];
+      targetTabsList.splice(tabsListIndex, 1);
+
+      if (tabStates.value[tabsListId] === removedTab.value) {
+        tabStates.value[tabsListId] = targetTabsList.length > 0 ? targetTabsList[0].value : null;
+      }
+
+      // If tabsList becomes empty, revert to placeholder
+      if (targetTabsList.length === 0) {
+        const layoutItem = placeHolderLayout.value.find(item => item.id === tabsListId);
+        layoutItem.type = 'placeholder';
+        layoutItem.tabsList = [];
+        const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+        if (tabsHeading) {
+          tabsHeading.visibility = false;
+          tabsHeading.icon = 'fa-solid fa-eye-slash';
+          tabsHeading.storedTabsList = null;
+        }
+      }
+    }
+
     headingItem.icon = 'fa-solid fa-eye-slash';
     headingItem.visibility = false;
   } else {
     // Restore to the current or most logical position
     let restored = false;
 
-    // Try to restore to current location if it exists
+    // Try to restore to storedComponent (componentOrder)
     if (headingItem.storedComponent) {
       const targetIndex = headingItem.storedComponent.index;
       if (componentOrder.value[targetIndex]?.type === 'placeholder') {
@@ -480,36 +625,79 @@ const hideShowComponent = (item) => {
           id: componentOrder.value[targetIndex].id,
           type: 'component',
           component: headingItem.storedComponent.component,
-          cols: componentOrder.value[targetIndex].cols,
+          cols: headingItem.storedComponent.cols,
           title: headingItem.storedComponent.title,
         };
         restored = true;
       }
-    } else if (headingItem.storedPlaceholder) {
+    }
+
+    // Try to restore to storedPlaceholder (placeHolderLayout)
+    if (!restored && headingItem.storedPlaceholder) {
       const targetIndex = headingItem.storedPlaceholder.index;
       if (placeHolderLayout.value[targetIndex]?.type === 'placeholder') {
         placeHolderLayout.value[targetIndex] = {
           id: placeHolderLayout.value[targetIndex].id,
           type: 'component',
           component: headingItem.storedPlaceholder.component,
-          cols: placeHolderLayout.value[targetIndex].cols,
+          cols: headingItem.storedPlaceholder.cols,
           title: headingItem.storedPlaceholder.title,
         };
         restored = true;
       }
-    } else if (headingItem.storedTab) {
-      tabsList.value.splice(headingItem.storedTab.index, 0, {
-        title: headingItem.storedTab.title,
-        value: headingItem.storedTab.value,
-        component: headingItem.storedTab.component,
-      });
-      if (!tab.value && tabsList.value.length > 0) {
-        tab.value = tabsList.value[headingItem.storedTab.index].value;
-      }
-      restored = true;
     }
 
-    // If not restored(placeholder was deleted)add to componentOrder as a fallback
+    // Try to restore to storedTab (main tabsList or cols="12" tabsList)
+    if (!restored && headingItem.storedTab) {
+      const { tabsListId, index, title, value, component } = headingItem.storedTab;
+      if (tabsListId) {
+        // Restore to cols="12" tabsList in placeHolderLayout
+        const targetLayoutItem = placeHolderLayout.value.find(item => item.id === tabsListId);
+        if (targetLayoutItem && (targetLayoutItem.type === 'tabsList' || targetLayoutItem.type === 'placeholder')) {
+          if (targetLayoutItem.type === 'placeholder') {
+            targetLayoutItem.type = 'tabsList';
+            targetLayoutItem.tabsList = [];
+            initializeTabState(tabsListId);
+          }
+          targetLayoutItem.tabsList.splice(index, 0, {
+            id: uuidv4(),
+            title,
+            value,
+            component: markRaw(component),
+          });
+          if (!tabStates.value[tabsListId]) {
+            tabStates.value[tabsListId] = value;
+          }
+          const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+          if (tabsHeading) {
+            tabsHeading.visibility = false;
+            tabsHeading.icon = 'fa-solid fa-eye-slash';
+            tabsHeading.storedTabsList = {
+              tabsList: targetLayoutItem.tabsList.map(tab => ({
+                ...tab,
+                component: markRaw(tab.component),
+              })),
+              id: tabsListId,
+            };
+          }
+          restored = true;
+        }
+      } else {
+        // Restore to main tabsList
+        tabsList.value.splice(index, 0, {
+          id: uuidv4(),
+          title,
+          value,
+          component: markRaw(component),
+        });
+        if (!tab.value && tabsList.value.length > 0) {
+          tab.value = tabsList.value[index].value;
+        }
+        restored = true;
+      }
+    }
+
+    // Fallback: Add to componentOrder if not restored
     if (!restored) {
       componentOrder.value.push({
         id: uuidv4(),
@@ -566,19 +754,14 @@ const deleteColumn = (id, index) => {
 };
 
 // delete the tab form the tab list 
-const deleteTab = (index) => {
-  const deletedTab = tabsList.value[index];
-  tabsList.value.splice(index, 1);
+const deleteTab = (index, tabsListRef = tabsList, tabStateRef = tab) => {
+  const deletedTab = tabsListRef.value[index];
+  tabsListRef.value.splice(index, 1);
 
-  // Find the corresponding component in componentHeading
-  const headingItem = componentHeading.value.find((heading) => heading.component === deletedTab.component);
-
+  const headingItem = componentHeading.value.find(h => h.component === deletedTab.component);
   if (headingItem) {
-    // update icon visiblility and hide the component
     headingItem.visibility = false;
     headingItem.icon = 'fa-solid fa-eye-slash';
-
-    //  store  tab position for restore
     headingItem.storedTab = {
       title: deletedTab.title,
       value: deletedTab.value,
@@ -587,11 +770,23 @@ const deleteTab = (index) => {
     };
   }
 
-  // Update the active tab if the deleted tab was active
-  if (tab.value === deletedTab.value && tabsList.value.length > 0) {
-    tab.value = tabsList.value[0].value;
-  } else if (tabsList.value.length === 0) {
-    tab.value = null;
+  if (tabStateRef.value === deletedTab.value && tabsListRef.value.length > 0) {
+    tabStateRef.value = tabsListRef.value[0].value;
+  } else if (tabsListRef.value.length === 0) {
+    tabStateRef.value = null;
+    if (tabsListRef !== tabsList) {
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading && tabsHeading.storedTabsList) {
+        const targetItem = placeHolderLayout.value.find(item => item.id === tabsHeading.storedTabsList.id);
+        if (targetItem) {
+          targetItem.type = 'placeholder';
+          targetItem.tabsList = [];
+        }
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = null;
+      }
+    }
   }
 };
 
@@ -625,9 +820,11 @@ const onPlaceholderDragStart = (event, item, index) => {
 };
 
 // Drag start handler for tabs 
-const onTabDragStart = (event, tabItem, index) => {
+const onTabDragStart = (event, tabItem, index, tabsListId = null) => {
   draggedTab.value = tabItem;
   draggedTabIndex.value = index;
+  draggedTab.value.tabsListId = tabsListId;
+  event.dataTransfer.setData('tabDrag', tabItem.value);
 };
 
 // Drag over handler
@@ -639,9 +836,139 @@ const onDragOver = (event) => {
 const onDrop = (event, dropIndex) => {
   event.preventDefault();
 
+  // Handle Drag and Drop of Entire tabs lsit
+  if (isDraggingAllTabs.value) {
+    const targetItem = componentOrder.value[dropIndex];
+
+    // If the target is a placeholder
+    if (targetItem.type === 'placeholder') {
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'tabsList',
+        tabsList: tabsList.value.map(tabItem => ({
+          ...tabItem,
+          component: markRaw(tabItem.component),
+        })),
+        cols: targetItem.cols,
+      };
+      tabsList.value = [];
+      // Initialize new tab state
+      initializeTabState(targetItem.id);
+    }
+    // If the target is a component
+    else if (targetItem.type === 'component') {
+      const tempComponent = {
+        id: targetItem.id,
+        title: targetItem.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(targetItem.component),
+        id: uuidv4(),
+      };
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'tabsList',
+        tabsList: tabsList.value.map(tabItem => ({
+          ...tabItem,
+          component: markRaw(tabItem.component),
+        })),
+        cols: targetItem.cols,
+      };
+      tabsList.value = [tempComponent];
+      // Initialize new tab state
+      initializeTabState(targetItem.id);
+
+      // Update visibility of the new tab in componentHeading
+      const headingItem = componentHeading.value.find(
+        (heading) => heading.component === tempComponent.component
+      );
+      if (headingItem) {
+        headingItem.visibility = true;
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.storedTab = null;
+        headingItem.storedComponent = null;
+      }
+    }
+    // If the target is a tabsList
+    else if (targetItem.type === 'tabsList') {
+      const targetTabsList = targetItem.tabsList;
+      // There should be only one tab in tabsList (e.g., PersonalDetails)
+      if (tabsList.value.length === 1) {
+        const singleTab = tabsList.value[0];
+        componentOrder.value[dropIndex] = {
+          id: targetItem.id,
+          type: 'component',
+          component: markRaw(singleTab.component),
+          cols: targetItem.cols,
+          title: singleTab.title,
+        };
+        tabsList.value = targetTabsList.map(tab => ({
+          ...tab,
+          component: markRaw(tab.component),
+          id: uuidv4(),
+        }));
+      } else {
+        // If there are multiple tabs in tabsList (for safety)
+        componentOrder.value[dropIndex] = {
+          id: targetItem.id,
+          type: 'tabsList',
+          tabsList: tabsList.value.map(tabItem => ({
+            ...tabItem,
+            component: markRaw(tabItem.component),
+          })),
+          cols: targetItem.cols,
+        };
+        tabsList.value = targetTabsList.map(tab => ({
+          ...tab,
+          component: markRaw(tab.component),
+          id: uuidv4(),
+        }));
+        // Initialize new tab state
+        initializeTabState(targetItem.id);
+      }
+    }
+
+    // Update visibility and stored properties of all tabs in componentHeading
+    componentHeading.value.forEach(heading => {
+      if (tabsList.value.some(tab => tab.component === heading.component)) {
+        heading.visibility = true;
+        heading.icon = 'fa-solid fa-eye';
+        heading.storedTab = null;
+        heading.storedComponent = null;
+      } else if (
+        componentOrder.value[dropIndex].type === 'tabsList' &&
+        componentOrder.value[dropIndex].tabsList.some(tab => tab.component === heading.component)
+      ) {
+        heading.visibility = true;
+        heading.icon = 'fa-solid fa-eye';
+        heading.storedTab = null;
+        heading.storedComponent = null;
+      } else if (
+        componentOrder.value[dropIndex].type === 'component' &&
+        componentOrder.value[dropIndex].component === heading.component
+      ) {
+        heading.visibility = true;
+        heading.icon = 'fa-solid fa-eye';
+        heading.storedTab = null;
+        heading.storedComponent = null;
+      }
+    });
+
+    // If tabsList is empty, reset tab
+    if (tabsList.value.length === 0) {
+      tab.value = null;
+    } else if (tabsList.value.length > 0 && !tab.value) {
+      tab.value = tabsList.value[0].value;
+    }
+
+    isDraggingAllTabs.value = false;
+    return;
+  }
+
   // Handle hidden component drop
   if (draggedHiddenComponent.value) {
     const targetItem = componentOrder.value[dropIndex];
+
+    // if the target is placeholder 
     if (targetItem.type === 'placeholder') {
       componentOrder.value[dropIndex] = {
         id: targetItem.id,
@@ -650,13 +977,73 @@ const onDrop = (event, dropIndex) => {
         cols: targetItem.cols,
         title: draggedHiddenComponent.value.title,
       };
+      // componentHeading update 
+      const headingItem = componentHeading.value.find(
+        (heading) => heading.component === draggedHiddenComponent.value.component
+      );
+      if (headingItem) {
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.visibility = true;
+        headingItem.storedTab = null;
+        headingItem.storedComponent = null;
+      }
+    }
+    // if targer is tabsList 
+    else if (targetItem.type === 'tabsList') {
+      const newTab = {
+        id: uuidv4(),
+        title: draggedHiddenComponent.value.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(draggedHiddenComponent.value.component),
+      };
+      componentOrder.value[dropIndex].tabsList.push(newTab);
+      // componentHeading update 
+      const headingItem = componentHeading.value.find(
+        (heading) => heading.component === draggedHiddenComponent.value.component
+      );
+      if (headingItem) {
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.visibility = true;
+        headingItem.storedTab = null;
+        headingItem.storedComponent = null;
+      }
+    }
+    // if target is component 
+    else if (targetItem.type === 'component') {
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: markRaw(draggedHiddenComponent.value.component),
+        cols: targetItem.cols,
+        title: draggedHiddenComponent.value.title,
+      };
+      // componentHeading update 
+      const headingItem = componentHeading.value.find(
+        (heading) => heading.component === draggedHiddenComponent.value.component
+      );
+      if (headingItem) {
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.visibility = true;
+        headingItem.storedTab = null;
+        headingItem.storedComponent = null;
+      }
+      // previous component componentHeading update
+      const oldHeadingItem = componentHeading.value.find(
+        (heading) => heading.component === targetItem.component
+      );
+      if (oldHeadingItem) {
+        oldHeadingItem.visibility = false;
+        oldHeadingItem.icon = 'fa-solid fa-eye-slash';
+        oldHeadingItem.storedComponent = {
+          id: targetItem.id,
+          type: 'component',
+          component: markRaw(targetItem.component),
+          cols: targetItem.cols,
+          title: targetItem.title,
+        };
+      }
     }
 
-    const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if (headingItem) {
-      headingItem.icon = 'fa-solid fa-eye';
-      headingItem.visibility = true;
-    }
     draggedHiddenComponent.value = null;
     return;
   }
@@ -759,7 +1146,181 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
   const placeholderIndex = placeHolderLayout.value.findIndex(item => item.id === placeholderId);
   if (placeholderIndex === -1) return;
 
-  // Handle hidden component drop to placeholder row
+  // When "Tabs" heading is dropped
+  if (draggedHiddenComponent.value && draggedHiddenComponent.value.title === 'Tabs') {
+    const targetItem = placeHolderLayout.value[placeholderIndex];
+    if (targetItem.cols !== 12 && targetItem.cols !==8) return; // Allow drop only in cols="12"
+
+    placeHolderLayout.value[placeholderIndex] = {
+      id: targetItem.id,
+      type: 'tabsList',
+      tabsList: [],
+      cols: 12,
+    };
+
+    const headingItem = componentHeading.value.find(h => h.title === 'Tabs');
+    if (headingItem) {
+      headingItem.visibility = true;
+      headingItem.icon = 'fa-solid fa-eye';
+    }
+
+    initializeTabState(targetItem.id);
+    draggedHiddenComponent.value = null;
+    return;
+  }
+
+  // Add component to tabsList when dropped
+  const targetItem = placeHolderLayout.value[placeholderIndex];
+  if (targetItem.type === 'tabsList') {
+    if (draggedHiddenComponent.value) {
+      const newTab = {
+        id: uuidv4(),
+        title: draggedHiddenComponent.value.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(draggedHiddenComponent.value.component),
+      };
+      targetItem.tabsList.push(newTab);
+      tabStates.value[targetItem.id] = newTab.value;
+
+      const headingItem = componentHeading.value.find(h => h.component === draggedHiddenComponent.value.component);
+      if (headingItem) {
+        headingItem.visibility = true;
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.storedComponent = null;
+        headingItem.storedPlaceholder = null;
+        headingItem.storedTab = null;
+      }
+
+      // Remove "Tabs" heading
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading && targetItem.tabsList.length > 0) {
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = {
+          tabsList: targetItem.tabsList.map(tab => ({
+            ...tab,
+            component: markRaw(tab.component),
+          })),
+          id: targetItem.id,
+        };
+      }
+
+      draggedHiddenComponent.value = null;
+      return;
+    }
+
+    if (draggedItem.value) {
+      const dragged = draggedItem.value;
+      const fromIndex = draggedIndex.value;
+      const newTab = {
+        id: uuidv4(),
+        title: dragged.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(dragged.component),
+      };
+      targetItem.tabsList.push(newTab);
+      tabStates.value[targetItem.id] = newTab.value;
+      componentOrder.value.splice(fromIndex, 1, {
+        id: dragged.id,
+        type: 'placeholder',
+        cols: dragged.cols,
+      });
+
+      // Remove "Tabs" heading
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading && targetItem.tabsList.length > 0) {
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = {
+          tabsList: targetItem.tabsList.map(tab => ({
+            ...tab,
+            component: markRaw(tab.component),
+          })),
+          id: targetItem.id,
+        };
+      }
+
+      draggedItem.value = null;
+      draggedIndex.value = null;
+      return;
+    }
+
+    if (draggedTab.value) {
+      const tabItem = draggedTab.value;
+      const tabIndex = draggedTabIndex.value;
+      const newTab = {
+        id: uuidv4(),
+        title: tabItem.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(tabItem.component),
+      };
+      targetItem.tabsList.push(newTab);
+      tabStates.value[targetItem.id] = newTab.value;
+      tabsList.value.splice(tabIndex, 1);
+
+      if (tab.value === tabItem.value && tabsList.value.length > 0) {
+        tab.value = tabsList.value[0].value;
+      } else if (tabsList.value.length === 0) {
+        tab.value = null;
+      }
+
+      // Remove "Tabs" heading
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading && targetItem.tabsList.length > 0) {
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = {
+          tabsList: targetItem.tabsList.map(tab => ({
+            ...tab,
+            component: markRaw(tab.component),
+          })),
+          id: targetItem.id,
+        };
+      }
+
+      draggedTab.value = null;
+      draggedTabIndex.value = null;
+      return;
+    }
+
+    if (draggedPlaceholder.value && draggedPlaceholder.value.type === 'component') {
+      const dragged = draggedPlaceholder.value;
+      const fromIndex = draggedPlaceholderIndex.value;
+      const newTab = {
+        id: uuidv4(),
+        title: dragged.title,
+        value: `custom-${targetItem.id}-${uuidv4()}`,
+        component: markRaw(dragged.component),
+      };
+      targetItem.tabsList.push(newTab);
+      tabStates.value[targetItem.id] = newTab.value;
+      placeHolderLayout.value.splice(fromIndex, 1, {
+        id: dragged.id,
+        type: 'placeholder',
+        cols: dragged.cols,
+      });
+
+      // Remove "Tabs" heading
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading && targetItem.tabsList.length > 0) {
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = {
+          tabsList: targetItem.tabsList.map(tab => ({
+            ...tab,
+            component: markRaw(tab.component),
+          })),
+          id: targetItem.id,
+        };
+      }
+
+      draggedPlaceholder.value = null;
+      draggedPlaceholderIndex.value = null;
+      return;
+    }
+  }
+
+  // Existing drop logic (for heading components, componentOrder, placeHolderLayout, and tabsList)
   if (draggedHiddenComponent.value) {
     const targetItem = placeHolderLayout.value[placeholderIndex];
     if (targetItem.type === 'placeholder') {
@@ -770,17 +1331,16 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
         cols: targetItem.cols,
         title: draggedHiddenComponent.value.title,
       };
+      const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
+      if (headingItem) {
+        headingItem.icon = 'fa-solid fa-eye';
+        headingItem.visibility = true;
+      }
+      draggedHiddenComponent.value = null;
+      return;
     }
-    const headingItem = componentHeading.value.find((heading) => heading.component === draggedHiddenComponent.value.component);
-    if (headingItem) {
-      headingItem.icon = 'fa-solid fa-eye';
-      headingItem.visibility = true;
-    }
-    draggedHiddenComponent.value = null;
-    return;
   }
 
-  // Handle component or placeholder drop from componentOrder
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
@@ -816,9 +1376,9 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
     }
     draggedItem.value = null;
     draggedIndex.value = null;
+    return;
   }
 
-  // Handle placeholder drop from placeHolderLayout
   if (draggedPlaceholder.value) {
     const dragged = draggedPlaceholder.value;
     const fromIndex = draggedPlaceholderIndex.value;
@@ -826,9 +1386,9 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
     placeHolderLayout.value.splice(placeholderIndex, 0, dragged);
     draggedPlaceholder.value = null;
     draggedPlaceholderIndex.value = null;
+    return;
   }
 
-  // Handle tab drop
   if (draggedTab.value) {
     const tabItem = draggedTab.value;
     const tabIndex = draggedTabIndex.value;
@@ -863,17 +1423,22 @@ const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
     }
     draggedTab.value = null;
     draggedTabIndex.value = null;
+    return;
   }
 };
 
 // Drop handler for reordering tabs
-const onDropTab = (event, dropIndex) => {
+const onDropTab = (event, dropIndex, tabsListId) => {
   event.preventDefault();
+  const targetTabsList = tabsListId
+    ? placeHolderLayout.value.find(item => item.id === tabsListId)?.tabsList || tabsList.value
+    : tabsList.value;
+
   if (draggedTab.value) {
     const fromIndex = draggedTabIndex.value;
     if (fromIndex === dropIndex) return;
-    const dragged = tabsList.value.splice(fromIndex, 1)[0];
-    tabsList.value.splice(dropIndex, 0, dragged);
+    const dragged = targetTabsList.splice(fromIndex, 1)[0];
+    targetTabsList.splice(dropIndex, 0, dragged);
     draggedTab.value = null;
     draggedTabIndex.value = null;
   }
@@ -881,41 +1446,67 @@ const onDropTab = (event, dropIndex) => {
   if (draggedItem.value) {
     const dragged = draggedItem.value;
     const fromIndex = draggedIndex.value;
-    const targetTab = tabsList.value[dropIndex];
-    tabsList.value[dropIndex] = {
+    const newTab = {
+      id: uuidv4(),
       title: dragged.title,
-      value: `custom-${dragged.id}-${Date.now()}`,
+      value: `custom-${dragged.id}-${uuidv4()}`,
       component: markRaw(dragged.component),
     };
+    targetTabsList.splice(dropIndex, 0, newTab);
     componentOrder.value.splice(fromIndex, 1, {
       id: dragged.id,
-      type: 'component',
-      component: markRaw(targetTab.component),
+      type: 'placeholder',
       cols: dragged.cols,
-      title: targetTab.title,
     });
+
+    const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+    if (tabsHeading && targetTabsList.length > 0 && tabsListId) {
+      tabsHeading.visibility = false;
+      tabsHeading.icon = 'fa-solid fa-eye-slash';
+      tabsHeading.storedTabsList = {
+        tabsList: targetTabsList.map(tab => ({
+          ...tab,
+          component: markRaw(tab.component),
+        })),
+        id: tabsListId,
+      };
+    }
+
     draggedItem.value = null;
     draggedIndex.value = null;
   }
 
-  if (draggedPlaceholder.value) {
-    const dragged = draggedPlaceholder.value;
-    const fromIndex = draggedPlaceholderIndex.value;
-    const targetTab = tabsList.value[dropIndex];
-    tabsList.value[dropIndex] = {
-      title: 'Placeholder',
-      value: `custom-${dragged.id}`,
-      component: null,
+  if (draggedHiddenComponent.value) {
+    const newTab = {
+      id: uuidv4(),
+      title: draggedHiddenComponent.value.title,
+      value: `custom-${tabsListId || 'tabs'}-${uuidv4()}`,
+      component: markRaw(draggedHiddenComponent.value.component),
     };
-    placeHolderLayout.value.splice(fromIndex, 1, {
-      id: dragged.id,
-      type: 'component',
-      component: markRaw(targetTab.component),
-      cols: dragged.cols,
-      title: targetTab.title,
-    });
-    draggedPlaceholder.value = null;
-    draggedPlaceholderIndex.value = null;
+    targetTabsList.splice(dropIndex, 0, newTab);
+    const headingItem = componentHeading.value.find(h => h.component === draggedHiddenComponent.value.component);
+    if (headingItem) {
+      headingItem.visibility = true;
+      headingItem.icon = 'fa-solid fa-eye';
+      headingItem.storedComponent = null;
+      headingItem.storedPlaceholder = null;
+      headingItem.storedTab = null;
+    }
+
+    const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+    if (tabsHeading && targetTabsList.length > 0 && tabsListId) {
+      tabsHeading.visibility = false;
+      tabsHeading.icon = 'fa-solid fa-eye-slash';
+      tabsHeading.storedTabsList = {
+        tabsList: targetTabsList.map(tab => ({
+          ...tab,
+          component: markRaw(tab.component),
+        })),
+        id: tabsListId,
+      };
+    }
+
+    draggedHiddenComponent.value = null;
   }
 };
 
@@ -1105,16 +1696,27 @@ const deletePlaceholderColumn = (id, index) => {
 // Adjust col of placeholder after the deletion of placeholder cols
 const adjustPlaceholderWidth = () => {
   const totalCols = 12;
-  const visibleColumns = placeHolderLayout.value;
-  const count = visibleColumns.length;
+  const allowedCols = [4, 6, 8, 12];
+  const count = placeHolderLayout.value.length;
 
   if (count === 0) return;
-  const baseWidth = Math.floor(totalCols / count);
-  const remainder = totalCols % count;
 
-  placeHolderLayout.value.forEach((item, index) => {
-    item.cols = index === count - 1 ? baseWidth + remainder : baseWidth;
-  });
+  // Find valid width based on count
+  let width;
+  if (count === 1) width = 12;
+  else if (count === 2) width = 6;
+  else if (count === 3) width = 4;
+  else {
+    // Adjust count to fit allowed widths (max 3 columns)
+    width = 4;
+    while (placeHolderLayout.value.length > 3) placeHolderLayout.value.pop();
+    while (placeHolderLayout.value.length < 3) {
+      placeHolderLayout.value.push({ id: uuidv4(), type: 'placeholder', cols: 4 });
+    }
+  }
+
+  // Apply width to all columns
+  placeHolderLayout.value.forEach(item => (item.cols = width));
 };
 
 // delete the component order row   
@@ -1197,66 +1799,27 @@ const onSectionDrop = (event, dropIndex) => {
   draggedSectionIndex.value = null;
 };
 
-// functions for dublicate the column of the component order and the placeholder column
-const duplicateColumn = (componentItem, index) => {
-  const totalCols = 12;
-  const currentCols = componentItem.cols;
-  const newPlaceholder = {
-    id: uuidv4(),
-    type: 'placeholder',
-    cols: currentCols,
-  };
+// Handle the entire tabsList when drag starts
+const onAllTabsDragStart = (event) => {
+  isDraggingAllTabs.value = true;
+  event.dataTransfer.setData('allTabsDrag', 'tabsList');
+};
 
-  // Add a new placeholder after the current column
-  componentOrder.value.splice(index + 1, 0, newPlaceholder);
+// New reference to manage tab state for each tabsList
+const tabStates = ref({});
 
-  //Shift the next column (if it exists) to the next row
-  if (index + 2 < componentOrder.value.length) {
-    const nextComponent = componentOrder.value[index + 2];
-    componentOrder.value.splice(index + 2, 1);
-    placeHolderLayout.value.push(nextComponent);
-  }
-
-  //Check the total column width
-  let currentRowCols = componentOrder.value.reduce((sum, item) => sum + item.cols, 0);
-
-  //If the total width exceeds 12
-  if (currentRowCols > totalCols) {
-    let lastItem = componentOrder.value.pop();
-    placeHolderLayout.value.push(lastItem);
-
-    let remainingCols =
-      totalCols - componentOrder.value.reduce((sum, item) => sum + item.cols, 0);
-    if (remainingCols > 0) {
-      componentOrder.value.push({
-        id: uuidv4(),
-        type: 'placeholder',
-        cols: remainingCols,
-      });
-    }
-  } else if (currentRowCols < totalCols) {
-    let remainingCols = totalCols - currentRowCols;
-    componentOrder.value.push({
-      id: uuidv4(),
-      type: 'placeholder',
-      cols: remainingCols,
-    });
-  }
-
-  //Check for empty space in placeHolderLayout
-  let nextRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
-  let nextRowRemainingCols = totalCols - nextRowCols;
-  if (nextRowRemainingCols > 0) {
-    placeHolderLayout.value.push({
-      id: uuidv4(),
-      type: 'placeholder',
-      cols: nextRowRemainingCols,
-    });
+// Function to set default tab for tabsList in componentOrder
+const initializeTabState = (tabsListId) => {
+  if (!tabStates.value[tabsListId]) {
+    const tabsList = placeHolderLayout.value.find(item => item.id === tabsListId)?.tabsList || [];
+    tabStates.value[tabsListId] = tabsList.length > 0 ? tabsList[0].value : null;
   }
 };
 
-const duplicatePlaceholderColumn = (componentItem, index) => {
+// functions for dublicate the column of the component order and the placeholder column
+const duplicateColumn = (componentItem, index) => {
   const totalCols = 12;
+
   const currentCols = componentItem.cols;
   const newPlaceholder = {
     id: uuidv4(),
@@ -1264,75 +1827,126 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
     cols: currentCols,
   };
 
+  // Insert new placeholder after the current column
+  componentOrder.value.splice(index + 1, 0, newPlaceholder);
 
-  //  Add a new placeholder after the current column
-  placeHolderLayout.value.splice(index + 1, 0, newPlaceholder);
+  // Check total column width in componentOrder
+  let currentRowCols = componentOrder.value.reduce((sum, item) => sum + item.cols, 0);
 
-  // Calculate total column width and find the largest available placeholder
-  let currentRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
-  let availablePlaceholder = placeHolderLayout.value
-    .filter((item) => item.type === 'placeholder' && item.cols >= currentCols)
-    .sort((a, b) => b.cols - a.cols)[0]; // Choose the largest placeholder
+  // If total width exceeds 12, move the last item to placeHolderLayout
+  if (currentRowCols > totalCols) {
+    let lastItem = componentOrder.value.pop();
+    console.log("the last item is : ", lastItem)
+    placeHolderLayout.value.unshift(lastItem);
 
-
-  // If an available placeholder exists
-  if (availablePlaceholder) {
-    const placeholderIndex = placeHolderLayout.value.findIndex(
-      (item) => item.id === availablePlaceholder.id
-    );
-    // Remove the old placeholder
-    placeHolderLayout.value.splice(placeholderIndex, 1);
-
-    // Add a new placeholder for the remaining space
-    let remainingCols =
-      totalCols -
-      placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
-    if (remainingCols > 0) {
-      placeHolderLayout.value.push({
+    // Ensure componentOrder is exactly 12 cols (no additional placeholder needed)
+    currentRowCols = componentOrder.value.reduce((sum, item) => sum + item.cols, 0); //12 output
+    if (currentRowCols < totalCols) {
+      // This case shouldn’t occur since we’re popping to reach 12, but included for robustness
+      componentOrder.value.push({
         id: uuidv4(),
         type: 'placeholder',
-        cols: remainingCols,
+
       });
     }
-  } else if (currentRowCols > totalCols) {
-    // If no placeholder exists and the width exceeds 12
-    let lastItem = placeHolderLayout.value.pop();
-    placeHolderLayout.value.push(lastItem);
+  }
 
-    let remainingCols =
-      totalCols -
-      placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
-    if (remainingCols > 0) {
+
+  // Add a placeholder to placeHolderLayout to match desired output
+  placeHolderLayout.value.push({
+    id: uuidv4(),
+    type: 'placeholder',
+
+  });
+
+  console.log("the placeholder layout is:", placeHolderLayout)
+
+};
+
+// function for dublicate placeholder cols 
+const duplicatePlaceholderColumn = (componentItem, index) => {
+  const totalCols = 12;
+
+  const currentCols = componentItem.cols;
+  console.log("the current cols is : ", currentCols)
+
+  // Create a new placeholder with the same width
+  const newPlaceholder = {
+    id: uuidv4(),
+    type: 'placeholder',
+    cols: currentCols,
+  };
+
+  // Insert new placeholder after the current column
+  placeHolderLayout.value.splice(index + 1, 0, newPlaceholder);
+
+  // Calculate total column width in placeHolderLayout
+  let currentRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
+
+  // Handle overflow if total width exceeds 12
+  if (currentRowCols > totalCols) {
+    // Pop the last item to keep the current row at 12 cols
+    const lastItem = placeHolderLayout.value.pop();
+
+    // Start a new row in placeHolderLayout with the popped item
+    placeHolderLayout.value.push({
+      id: uuidv4(),
+      type: lastItem.type,
+      cols: lastItem.cols,
+      component: lastItem.component ? markRaw(lastItem.component) : null,
+      title: lastItem.title,
+    });
+
+    // Recalculate current row cols
+    currentRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
+
+    // If the current row is still less than 12, add a placeholder
+    if (currentRowCols < totalCols) {
+
+
       placeHolderLayout.value.push({
         id: uuidv4(),
         type: 'placeholder',
-        cols: remainingCols,
+
       });
     }
   } else if (currentRowCols < totalCols) {
-    // If there is empty space in the current row
-    let remainingCols = totalCols - currentRowCols;
-    let existingPlaceholderIndex = placeHolderLayout.value.findIndex(
+    // If there's empty space, adjust or add a placeholder
+
+    const existingPlaceholderIndex = placeHolderLayout.value.findIndex(
       (item) => item.type === 'placeholder'
     );
 
     if (existingPlaceholderIndex !== -1) {
-      placeHolderLayout.value[existingPlaceholderIndex].cols = remainingCols;
+      // Adjust existing placeholder's width
+
     } else {
+      // Add a new placeholder for the remaining space
+
       placeHolderLayout.value.push({
         id: uuidv4(),
         type: 'placeholder',
-        cols: remainingCols,
       });
     }
   }
 
-};
 
+};
 
 </script>
 
+
 <style scoped>
+.drag-all-column {
+  left: -9px;
+  top: -12px;
+  z-index: 2;
+  cursor: grab;
+  font-size: 15px;
+  color: red;
+  position: absolute;
+}
+
 .back-btn {
   background-color: transparent !important;
   color: rgba(225, 222, 245, 0.9);
@@ -1373,6 +1987,7 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
   cursor: grab;
   font-size: 20px;
   color: #555;
+
 }
 
 .xmark {
@@ -1390,6 +2005,14 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
 }
 
 .dublicate-component-column {
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 65px;
+  color: #555;
+}
+
+.drag-component {
   position: absolute;
   z-index: 1;
   top: 2px;
@@ -1485,9 +2108,11 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
 /* Component Order Row Icons */
 .component-order-row {
   position: relative;
-  border: 1px dashed rgba(136, 198, 213, 1);
-  padding-top: 40px;
   margin-bottom: 20px;
+}
+
+.component-order-row:hover {
+  border: 1px dashed rgba(136, 198, 213, 1);
 }
 
 .trash-row,
@@ -1495,9 +2120,9 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
 .dublicate-row,
 .placeholder-row {
   position: absolute;
-  top: 10px;
+  top: -20px;
   /* Position icons at the top of the row */
-  z-index: 10;
+  z-index: 1;
   cursor: pointer;
   font-size: 15px;
   color: #555;
@@ -1523,7 +2148,6 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
 /* Tabs List Row Icons */
 .section-wrapper:has(.v-tabs) {
   position: relative;
-  padding-top: 40px;
   margin-bottom: 20px;
 }
 
@@ -1532,8 +2156,8 @@ const duplicatePlaceholderColumn = (componentItem, index) => {
 .dublicate-tablist-row,
 .placeholder-tablist-row {
   position: absolute;
-  top: 10px;
-  z-index: 10;
+  top: -20px;
+  z-index: 1;
   cursor: pointer;
   font-size: 15px;
   color: #555;
