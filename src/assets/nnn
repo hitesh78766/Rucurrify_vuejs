@@ -2684,3 +2684,100 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
   left: calc(50% + 30px);
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 
+
+
+
+
+
+
+
+
+      <!-- placeholder container div -->
+      <!-- <div class="placeholder-make-div mb-5 d-flex align-items-center justify-content-between m-auto"
+        style="width: 800px;">
+        <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 4, 4])">
+          <div class="exampleSectionFullNew"></div>
+          <div class="exampleSectionFullNew"></div>
+          <div class="exampleSectionFullNew"></div>
+        </div>
+
+        <div class="d-flex gap-1" @click="addPlaceHolderRow([6, 6])">
+          <div class="exampleSectionFullNew"></div>
+          <div class="exampleSectionFullNew"></div>
+        </div>
+
+        <div class="d-flex gap-1" @click="addPlaceHolderRow([8, 4])">
+          <div class="exampleSectionFullNewseventy"></div>
+          <div class="exampleSectionFullNew"></div>
+        </div>
+
+        <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 8])">
+          <div class="exampleSectionFullNew"></div>
+          <div class="exampleSectionFullNewseventy"></div>
+        </div>
+
+        <div class="d-flex gap-1" @click="addPlaceHolderRow([12])">
+          <div class="exampleSectionFullNewseventy"></div>
+        </div>
+        <div class="position-absolute">
+          <i class="fa-solid fa-xmark xmark-icon"></i>
+        </div>
+      </div> -->
+
+
+
+
+
+
+.placeholder-make-div {
+  width: 800px;
+  padding: 20px;
+  border: 1px solid gray;
+}
+
+.exampleSectionFullNew {
+  width: 50px;
+  height: 35px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background: #f8f8f8;
+}
+
+.exampleSectionFullNewseventy {
+  width: 90px;
+  height: 35px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background: #f8f8f8;
+}
+
+.xmark-icon {
+  right: 365px;
+  top: 80px;
+  /* color: red; */
+  /* background: red;
+    padding: 2px;
+    border-radius: 100%;
+    font-size: 14px; */
+}
+
+
+
+-->
