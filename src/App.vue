@@ -104,6 +104,7 @@
               </div>
             </template>
           </v-tooltip>
+
           <v-tooltip text="Drag entire row" location="top">
             <template v-slot:activator="{ props }">
               <div class="grip-row" v-if="hoverRow" v-bind="props" draggable="true"
@@ -112,6 +113,7 @@
               </div>
             </template>
           </v-tooltip>
+
           <v-tooltip text="Duplicate Row" location="top">
             <template v-slot:activator="{ props }">
               <div class="dublicate-row" v-if="hoverRow" v-bind="props" @click="addPlaceHolderRow([4, 4, 4])">
@@ -119,6 +121,7 @@
               </div>
             </template>
           </v-tooltip>
+
           <v-tooltip text="Delete entire row" location="top">
             <template v-slot:activator="{ props }">
               <div class="trash-row" v-if="hoverRow" v-bind="props" @click="deleteComponentRow">
@@ -227,90 +230,126 @@
           </div>
         </v-row>
 
-        <!-- Dynamic placeholder row -->
-        <v-row class="" v-if="section.type === 'componentOrder'">
-          <v-col v-for="(item, index) in placeHolderLayout" :key="item.id" :cols="item.cols"
-            @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id, index)"
-            @mouseenter="onMouseEnterPlaceholder(item.id)" @mouseleave="onMouseLeavePlaceholder"
-            class="position-relative">
-            <v-tooltip text="Delete column" location="right">
-              <template v-slot:activator="{ props }">
-                <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
-                  @click="deletePlaceholderColumn(item.id, index)">
-                  <i class="fa-solid fa-trash"></i>
-                </div>
-              </template>
-            </v-tooltip>
-            <v-tooltip text="Duplicate column" location="right">
-              <template v-slot:activator="{ props }">
-                <div class="dublicate-component-column"
-                  v-if="hoverGripPlaceHolder === item.id && item.type !== 'placeholder'" v-bind="props">
-                  <i class="fa-solid fa-clone" @click="duplicatePlaceholderColumn(item, index)"></i>
-                </div>
-              </template>
-            </v-tooltip>
-
-            <v-tooltip text="Drag column" location="right">
-              <template v-slot:activator="{ props }">
-                <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder" v-bind="props"
-                  :draggable="true" @dragstart="onPlaceholderDragStart($event, item, index)">
-                  <i class="fa-solid fa-grip-vertical"></i>
-                </div>
-              </template>
-            </v-tooltip>
-
-            <div v-if="item.type === 'component'" class="component-container">
-              <component :is="item.component" />
-            </div>
-
-            <!-- for make the tabs of all the components in the placeholder 12 -->
-            <div v-else-if="item.type === 'tabsList'" class="component-container">
-              <v-tabs v-model="tabStates[item.id]" background-color="primary" dark class="mb-3">
-
-                <v-tab v-if="item.tabsList.length === 0" value="default-tabs" class="default-tab">
-                  <span class="me-2"><i class="fa-solid fa-grip-vertical"></i></span> Tabs
-                </v-tab>
-
-                <v-tab v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value"
-                  :class="{ 'active-tab': tabStates[item.id] === tabItem.value }" draggable="true"
-                  @dragstart="onTabDragStart($event, tabItem, tabIndex, item.id)"
-                  @drop="onDropTab($event, tabIndex, item.id)" @mouseenter="hoverTabDeleteIcon = tabItem.id"
-                  @mouseleave="hoverTabDeleteIcon = null">
-                  <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
-                  <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id"
-                    @click="deleteTab(tabIndex, { value: item.tabsList }, { value: tabStates[item.id] })">
-                    <i class="fa-solid fa-trash"></i>
-                  </span>
-                </v-tab>
-              </v-tabs>
-              <v-window v-model="tabStates[item.id]" :touch="false">
-                <v-window-item v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value">
-                  <component :is="tabItem.component" />
-                </v-window-item>
-              </v-window>
-            </div>
-
-            <div v-else class="placeholder-cols">
-              Drag the item
-            </div>
-
-            <!-- Column width button for placeholder -->
-            <v-btn v-if="hoverGripPlaceHolder === item.id" color="warning" variant="tonal" class="width-btn" small
-              @click="toggleWidthOptions(item.id, 'placeholder')">
-              Column width
-            </v-btn>
-
-            <!-- Column width toggle for placeholder -->
-            <v-btn-toggle v-if="showColumnWidthToggle[item.id]" class="toggle-btns border-thin"
-              v-model="toggle_exclusive" small>
-              <v-btn @click="setColumnWidth(item.id, 4, 'placeholder')">33%</v-btn>
-              <v-btn @click="setColumnWidth(item.id, 6, 'placeholder')">50%</v-btn>
-              <v-btn @click="setColumnWidth(item.id, 8, 'placeholder')">66%</v-btn>
-              <v-btn @click="setColumnWidth(item.id, 12, 'placeholder')">100%</v-btn>
-              <v-btn @click="closeToggleBtns(item.id)">X</v-btn>
-            </v-btn-toggle>
-          </v-col>
-        </v-row>
+        <!-- Placeholder Section -->
+<div v-if="section.type === 'placeholder'" class="placeholder-section">
+  <v-row
+    v-for="(row, rowIndex) in placeHolderRows"
+    :key="rowIndex"
+    class="component-order-row"
+    @mouseenter="onMouseEnterPlaceholderRow(rowIndex)"
+    @mouseleave="onMouseLeavePlaceholderRow(rowIndex)"
+    draggable="true"
+    @dragstart="onPlaceholderRowDragStart($event, row, rowIndex, section, index)"
+    @dragover="onDragOver($event)"
+    @drop="onPlaceholderRowDrop($event, rowIndex, section, index)"
+  >
+    <v-tooltip text="Add Placeholder" location="top">
+      <template v-slot:activator="{ props }">
+        <div class="placeholder-row" v-if="hoverPlaceholderRows[rowIndex]" v-bind="props" @click="drawer = true">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip text="Drag entire row" location="top">
+      <template v-slot:activator="{ props }">
+        <div class="grip-row" v-if="hoverPlaceholderRows[rowIndex]" v-bind="props" draggable="true"
+          @dragstart="onPlaceholderRowDragStart($event, row, rowIndex, section, index)">
+          <i class="fa-solid fa-grip-vertical"></i>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip text="Duplicate Row" location="top">
+      <template v-slot:activator="{ props }">
+        <div class="dublicate-row" v-if="hoverPlaceholderRows[rowIndex]" v-bind="props" @click="addPlaceHolderRow([4, 4, 4])">
+          <i class="fa-solid fa-clone"></i>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-tooltip text="Delete entire row" location="top">
+      <template v-slot:activator="{ props }">
+        <div class="trash-row" v-if="hoverPlaceholderRows[rowIndex]" v-bind="props" @click="deletePlaceholderRow(rowIndex)">
+          <i class="fa-solid fa-trash"></i>
+        </div>
+      </template>
+    </v-tooltip>
+    <v-col
+      v-for="(item, colIndex) in row"
+      :key="item.id"
+      :cols="item.cols"
+      @dragover="onDragOver($event)"
+      @drop="onDropToPlaceholder($event, item.id, colIndex)"
+      @mouseenter="onMouseEnterPlaceholder(item.id)"
+      @mouseleave="onMouseLeavePlaceholder"
+      class="position-relative"
+    >
+      <!-- Existing v-col content remains unchanged -->
+      <v-tooltip text="Delete column" location="right">
+        <template v-slot:activator="{ props }">
+          <div class="trash-column" v-if="hoverPlaceholder === item.id" v-bind="props"
+            @click="deletePlaceholderColumn(item.id, colIndex)">
+            <i class="fa-solid fa-trash"></i>
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip text="Duplicate column" location="right">
+        <template v-slot:activator="{ props }">
+          <div class="dublicate-component-column"
+            v-if="hoverGripPlaceHolder === item.id && item.type !== 'placeholder'" v-bind="props">
+            <i class="fa-solid fa-clone" @click="duplicatePlaceholderColumn(item, colIndex)"></i>
+          </div>
+        </template>
+      </v-tooltip>
+      <v-tooltip text="Drag column" location="right">
+        <template v-slot:activator="{ props }">
+          <div v-if="hoverGripPlaceHolder === item.id" class="hover-grip-placeholder" v-bind="props" :draggable="true"
+            @dragstart="onPlaceholderDragStart($event, item, colIndex)">
+            <i class="fa-solid fa-grip-vertical"></i>
+          </div>
+        </template>
+      </v-tooltip>
+      <div v-if="item.type === 'component'" class="component-container">
+        <component :is="item.component" />
+      </div>
+      <div v-else-if="item.type === 'tabsList'" class="component-container">
+        <v-tabs v-model="tabStates[item.id]" background-color="primary" dark class="mb-3">
+          <v-tab v-if="item.tabsList.length === 0" value="default-tabs" class="default-tab">
+            <span class="me-2"><i class="fa-solid fa-grip-vertical"></i></span> Tabs
+          </v-tab>
+          <v-tab v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value"
+            :class="{ 'active-tab': tabStates[item.id] === tabItem.value }" draggable="true"
+            @dragstart="onTabDragStart($event, tabItem, tabIndex, item.id)"
+            @drop="onDropTab($event, tabIndex, item.id)" @mouseenter="hoverTabDeleteIcon = tabItem.id"
+            @mouseleave="hoverTabDeleteIcon = null">
+            <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
+            <span class="trash-tab-delete-icon" v-if="hoverTabDeleteIcon === tabItem.id"
+              @click="deleteTab(tabIndex, { value: item.tabsList }, { value: tabStates[item.id] })">
+              <i class="fa-solid fa-trash"></i>
+            </span>
+          </v-tab>
+        </v-tabs>
+        <v-window v-model="tabStates[item.id]" :touch="false">
+          <v-window-item v-for="(tabItem, tabIndex) in item.tabsList" :key="tabIndex" :value="tabItem.value">
+            <component :is="tabItem.component" />
+          </v-window-item>
+        </v-window>
+      </div>
+      <div v-else class="placeholder-cols">
+        Drag the item
+      </div>
+      <v-btn v-if="hoverGripPlaceHolder === item.id" color="warning" variant="tonal" class="width-btn" small
+        @click="toggleWidthOptions(item.id, 'placeholder')">
+        Column width
+      </v-btn>
+      <v-btn-toggle v-if="showColumnWidthToggle[item.id]" class="toggle-btns border-thin" v-model="toggle_exclusive" small>
+        <v-btn @click="setColumnWidth(item.id, 4, 'placeholder')">33%</v-btn>
+        <v-btn @click="setColumnWidth(item.id, 6, 'placeholder')">50%</v-btn>
+        <v-btn @click="setColumnWidth(item.id, 8, 'placeholder')">66%</v-btn>
+        <v-btn @click="setColumnWidth(item.id, 12, 'placeholder')">100%</v-btn>
+        <v-btn @click="closeToggleBtns(item.id)">X</v-btn>
+      </v-btn-toggle>
+    </v-col>
+  </v-row>
+</div>
 
         <!-- Tabs Section -->
         <div v-if="section.type === 'tabsList'" class="component-order-row " @mouseenter="hoverTablistRow = true"
@@ -364,7 +403,7 @@
             <v-tabs v-model="tab" background-color="primary" dark class="mb-3" @dragover="onDragOver($event)"
               @drop="onDropToTabs($event)">
               <v-tab v-for="(tabItem, index) in tabsList" :key="index" :value="tabItem.value"
-                :class="{ 'active-tab': tab === tabItem.value }" draggable="true"
+                :class="{ 'active-tab': tab === tabItem.value }" draggable="true" class="tablist-tab"
                 @dragstart="onTabDragStart($event, tabItem, index)" @drop="onDropTab($event, index)"
                 @mouseenter="hoverTabDeleteIcon = tabItem.id" @mouseleave="hoverTabDeleteIcon = null">
                 <span class="me-2"><i class="fa-regular fa-user"></i></span> {{ tabItem.title }}
@@ -391,6 +430,24 @@
 
       </div>
 
+      <!-- show the dialog box when click on delete entire row of component order  -->
+      <v-dialog v-model="showDeleteConfirm" max-width="450">
+        <v-card class="delete-dialog">
+          <v-card-title class="d-flex align-items-center justify-content-center exclamation-container">
+            <div class="exclamation"><i class="fa-solid fa-exclamation"></i></div>
+          </v-card-title>
+          <v-card-text class="dialog-text">
+            Are you sure you want to delete this {{
+              deleteContext === 'tabsSection' ? 'tabs section' : deleteContext === 'placeholderRow' ? 'placeholder section' : 'section'
+            }}? It contains components that will be removed.
+          </v-card-text>
+          <v-card-actions class="d-flex align-items-center justify-content-center">
+            <v-btn @click="showDeleteConfirm = false">No</v-btn>
+            <v-btn color="error" @click="confirmDelete">Yes</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
     </v-main>
   </v-app>
 </template>
@@ -398,12 +455,20 @@
 
 
 <script setup>
-import { ref } from 'vue';
-import { markRaw } from 'vue';
+import { ref, computed, markRaw } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 
 const drawer = ref(false);
 const tabs = ref('one');
+const showDeleteConfirm = ref(false); //variable for show the diaglog 
+const deleteContext = ref(null); // this will track the which row should be deleted component order row or tablist row 
+const deleteRowIndex = ref(null); // New ref to store the row index for deletion
+
+// Add new reactive variables for placeholder row dragging
+const draggedPlaceholderRow = ref(null);
+const draggedPlaceholderRowIndex = ref(null);
+const draggedPlaceholderSection = ref(null);
+const draggedPlaceholderSectionIndex = ref(null);
 
 const componentHeading = ref([
   {
@@ -462,6 +527,7 @@ const componentHeading = ref([
   },
 ]);
 
+
 const placeHolderLayout = ref([]);
 
 import PersonalDetails from './components/PersonalDetails.vue';
@@ -487,6 +553,17 @@ const showColumnWidthToggle = ref({});
 const hoverTabDeleteIcon = ref(null);
 const hoverRow = ref(false);
 const hoverTablistRow = ref(false)
+// In <script setup>
+const hoverPlaceholderRows = ref({}); // Object to track hover state for each row
+
+// Update hover event handlers
+const onMouseEnterPlaceholderRow = (rowIndex) => {
+  hoverPlaceholderRows.value[rowIndex] = true;
+};
+
+const onMouseLeavePlaceholderRow = (rowIndex) => {
+  hoverPlaceholderRows.value[rowIndex] = false;
+};
 
 const draggedItem = ref(null);
 const draggedIndex = ref(null);
@@ -495,10 +572,12 @@ const draggedTabIndex = ref(null);
 const draggedPlaceholder = ref(null);
 const draggedPlaceholderIndex = ref(null);
 const draggedHiddenComponent = ref(null);
+
 // variable for set the section order and drag and drop section order 
 const sectionOrder = ref([
   { id: 1, type: 'componentOrder' },
-  { id: 2, type: 'tabsList' },
+  { id: 2, type: 'placeholder' },
+  { id: 3, type: 'tabsList' },
 ]);
 const draggedSection = ref(null);
 const draggedSectionIndex = ref(null);
@@ -510,9 +589,11 @@ const draggedComponentParent = ref(null);
 
 // New reference to manage tab state for each tabsList
 const tabStates = ref({});
+const isDraggingAllTabs = ref(false); // variable for drag the entire tab section into the column
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
+
 const tabsList = ref([
   { title: 'Orders', value: 'orders', component: markRaw(OrderTab), id: 1, },
   { title: 'Timeline', value: 'timeline', component: markRaw(TimelineTab), id: 2, },
@@ -521,7 +602,6 @@ const tabsList = ref([
   { title: 'Email', value: 'email', component: markRaw(EmailTab), id: 5, },
 ]);
 
-const isDraggingAllTabs = ref(false);
 
 const onMouseEnter = (id) => {
   hoverGrip.value = id;
@@ -540,7 +620,6 @@ const onMouseLeavePlaceholder = () => {
   hoverGripPlaceHolder.value = null;
   hoverPlaceholder.value = null;
 };
-
 
 // function for toggle visibility of component 
 const hideShowComponent = (item) => {
@@ -833,7 +912,6 @@ const deleteColumn = (id, index, compIndex) => {
   }
 };
 
-
 // delete the tab form the tab list 
 const deleteTab = (index, tabsListRef = tabsList, tabStateRef = tab) => {
   const deletedTab = tabsListRef.value[index];
@@ -869,24 +947,6 @@ const deleteTab = (index, tabsListRef = tabsList, tabStateRef = tab) => {
       }
     }
   }
-};
-
-
-// Adjust the component cols after the deletion of the component cols
-const adjustColumnWidths = () => {
-  const totalCols = 12;
-  const visibleColumns = componentOrder.value.filter(item => item.type === 'component');
-  const count = visibleColumns.length;
-
-  if (count === 0) return;
-
-  const newWidth = Math.floor(totalCols / count);
-
-  componentOrder.value.forEach(item => {
-    if (item.type === 'component') {
-      item.cols = newWidth;
-    }
-  });
 };
 
 // Drag start handler for components and placeholders in componentOrder
@@ -1261,7 +1321,43 @@ const onDrop = (event, dropIndex) => {
     const fromIndex = draggedPlaceholderIndex.value;
     const targetItem = componentOrder.value[dropIndex];
 
-    if (dragged.type === 'component') {
+    // Handle swap when both source and target are components and dragged.cols === 12
+    if (dragged.type === 'component' && targetItem.type === 'component' && dragged.cols === 12) {
+      // Swap components between componentOrder and placeHolderLayout
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: [{ component: markRaw(dragged.component), title: dragged.title }],
+        cols: targetItem.cols,
+        title: dragged.title,
+      };
+      placeHolderLayout.value[fromIndex] = {
+        id: dragged.id,
+        type: 'component',
+        component: markRaw(targetItem.component[0].component),
+        cols: dragged.cols,
+        title: targetItem.component[0].title,
+      };
+
+      // Update visibility in componentHeading for both components
+      const draggedHeading = componentHeading.value.find(h => h.component === dragged.component);
+      const targetHeading = componentHeading.value.find(h => h.component === targetItem.component[0].component);
+      if (draggedHeading) {
+        draggedHeading.visibility = true;
+        draggedHeading.icon = 'fa-solid fa-eye';
+        draggedHeading.storedComponent = null;
+        draggedHeading.storedPlaceholder = null;
+        draggedHeading.storedTab = null;
+      }
+      if (targetHeading) {
+        targetHeading.visibility = true;
+        targetHeading.icon = 'fa-solid fa-eye';
+        targetHeading.storedComponent = null;
+        targetHeading.storedPlaceholder = null;
+        targetHeading.storedTab = null;
+      }
+    } else if (dragged.type === 'component') {
+      // Original logic for non-swap cases
       componentOrder.value[dropIndex] = {
         id: targetItem.id,
         type: 'component',
@@ -1842,6 +1938,7 @@ const onDropTab = (event, dropIndex, tabsListId) => {
   }
 };
 
+
 // Drop handler for tabs
 const onDropToTabs = (event) => {
   event.preventDefault();
@@ -2025,47 +2122,49 @@ const onDropToTabs = (event) => {
 
 // Set column width
 const setColumnWidth = (id, width, type = 'component') => {
-  console.log("the width is :", width)
-  let layout = type === 'component' ? componentOrder.value : placeHolderLayout.value;
-  console.log("the layout is :", layout)
+  const layout = type === 'component' ? componentOrder.value : placeHolderLayout.value;
   const item = layout.find((item) => item.id === id);
   if (!item) return;
 
-  // Set the new width
   item.cols = width;
+  const totalCols = 12;
+  let currentRowCols = 0;
+  let currentRow = [];
+  const newRows = [];
 
-  // Calculate total cols in the current row
-  let totalCols = layout.reduce((sum, curr) => sum + curr.cols, 0);
-
-  // if cols > 12 add placeholder for remaining space
-  if (totalCols > 12) {
-    // Find the point where cols exceed 12
-    let currentSum = 0;
-    let breakIndex = layout.length;
-    console.log("the break index is :", breakIndex)
-    for (let i = 0; i < layout.length; i++) {
-      currentSum += layout[i].cols;
-      if (currentSum > 12) {
-        breakIndex = i;
-        break;
+  layout.forEach((item) => {
+    if (currentRowCols + item.cols <= totalCols) {
+      currentRow.push(item);
+      currentRowCols += item.cols;
+    } else {
+      if (currentRow.length > 0) {
+        newRows.push([...currentRow]);
       }
+      currentRow = [item];
+      currentRowCols = item.cols;
     }
+  });
 
-    // if line vreak calculate remaining col in the next row
-    if (breakIndex < layout.length) {
-      const nextRowCols = layout.slice(breakIndex).reduce((sum, curr) => sum + curr.cols, 0);
-      console.log("the next row cols is :", nextRowCols)
-      const remainingCols = 12 - (nextRowCols % 12 || nextRowCols);
+  if (currentRow.length > 0) {
+    newRows.push([...currentRow]);
+  }
 
-      // add placeholder in remaining col in the next row
-      if (remainingCols > 0) {
-        layout.push({
-          id: uuidv4(),
-          type: 'placeholder',
-          cols: remainingCols,
-        });
-      }
-    }
+  const lastRow = newRows[newRows.length - 1];
+  const lastRowCols = lastRow.reduce((sum, curr) => sum + curr.cols, 0);
+  if (lastRowCols < totalCols) {
+    lastRow.push({
+      id: uuidv4(),
+      type: 'placeholder',
+      cols: totalCols - lastRowCols,
+    });
+  }
+
+  if (type === 'placeholder') {
+    placeHolderLayout.value = newRows.flat();
+    // Reset hover states for all rows
+    hoverPlaceholderRows.value = {};
+  } else {
+    componentOrder.value = newRows.flat();
   }
 };
 
@@ -2080,7 +2179,7 @@ const closeToggleBtns = (id) => {
 };
 
 // Add placeholder row
-const addPlaceHolderRow = (col) => {
+ const addPlaceHolderRow = (col) => {
   col.forEach((cols) => {
     placeHolderLayout.value.push({
       id: uuidv4(),
@@ -2089,7 +2188,6 @@ const addPlaceHolderRow = (col) => {
     });
   });
 };
-
 
 // Updated function to delete component or tabsList in placeholder without removing the placeholder column
 const deletePlaceholderColumn = (id, index) => {
@@ -2192,58 +2290,66 @@ const adjustPlaceholderWidth = () => {
   placeHolderLayout.value.forEach(item => (item.cols = width));
 };
 
-// delete the component order row  and hide the components form drawer which is inside the component order
+// show the dialog box and delete entire component order section 
 const deleteComponentRow = () => {
-  componentOrder.value.forEach((item, index) => {
-    if (item.type === 'component') {
-      // Loop through all sub-components in the component array
-      item.component.forEach((comp) => {
-        const headingItem = componentHeading.value.find(
-          (heading) => heading.component === comp.component
-        );
-        if (headingItem) {
-          headingItem.visibility = false;
-          headingItem.icon = 'fa-solid fa-eye-slash';
-          headingItem.storedComponent = {
-            component: [{ component: comp.component }],
-            title: comp.title,
-            index: index,
-            cols: item.cols,
-          };
-        }
-      });
-    }
-  });
-
-  componentOrder.value = [];
+  deleteContext.value = 'componentRow'; // Set context to componentRow
+  showDeleteConfirm.value = true;
 };
 
 // delete the entire tablist section
 const deleteTabsSection = () => {
-  tabsList.value.forEach((tabItem, index) => {
-    const headingItem = componentHeading.value.find(
-      (heading) => heading.component === tabItem.component
+  deleteContext.value = 'tabsSection'; // Set context to tabsSection
+  showDeleteConfirm.value = true;
+};
+
+// Delete the entire components orders and tablist section and hide those deleted components form drawer
+const confirmDelete = () => {
+  if (deleteContext.value === 'componentRow') {
+    componentOrder.value.forEach((item, index) => {
+      if (item.type === 'component') {
+        item.component.forEach((comp) => {
+          const headingItem = componentHeading.value.find(
+            (heading) => heading.component === comp.component
+          );
+          if (headingItem) {
+            headingItem.visibility = false;
+            headingItem.icon = 'fa-solid fa-eye-slash';
+            headingItem.storedComponent = { component: [comp], title: comp.title, index, cols: item.cols };
+          }
+        });
+      }
+    });
+    componentOrder.value = [];
+  } else if (deleteContext.value === 'tabsSection') {
+    tabsList.value.forEach((tabItem, index) => {
+      const headingItem = componentHeading.value.find(
+        (heading) => heading.component === tabItem.component
+      );
+      if (headingItem) {
+        headingItem.visibility = false;
+        headingItem.icon = 'fa-solid fa-eye-slash';
+        headingItem.storedTab = {
+          title: tabItem.title,
+          value: tabItem.value,
+          component: tabItem.component,
+          index,
+        };
+      }
+    });
+    tabsList.value = [];
+    tab.value = null;
+    const tabsSectionIndex = sectionOrder.value.findIndex(
+      (section) => section.type === 'tabsList'
     );
-    if (headingItem) {
-      headingItem.visibility = false;
-      headingItem.icon = 'fa-solid fa-eye-slash';
-      headingItem.storedTab = {
-        title: tabItem.title,
-        value: tabItem.value,
-        component: tabItem.component,
-        index,
-      };
+    if (tabsSectionIndex !== -1) {
+      sectionOrder.value.splice(tabsSectionIndex, 1);
     }
-  });
-  tabsList.value = [];
-  tab.value = null; // Reset active tab
-  // Optionally remove from sectionOrder
-  const tabsSectionIndex = sectionOrder.value.findIndex(
-    (section) => section.type === 'tabsList'
-  );
-  if (tabsSectionIndex !== -1) {
-    sectionOrder.value.splice(tabsSectionIndex, 1);
+  } else if (deleteContext.value === 'placeholderRow') {
+    deletePlaceholderRowConfirmed(deleteRowIndex.value);
   }
+  showDeleteConfirm.value = false;
+  deleteContext.value = null;
+  deleteRowIndex.value = null;
 };
 
 // for drag the entire the component & tablist row 
@@ -2254,20 +2360,61 @@ const onSectionDragStart = (event, section, index) => {
   event.dataTransfer.setData('sectionType', section.type);
 };
 
+// drop the entire sectoin for swaping the row or section 
 const onSectionDrop = (event, dropIndex) => {
-  // console.log("the event and drop index is : " , event ,  dropIndex)
   event.preventDefault();
-  if (!draggedSection.value || draggedSectionIndex.value === dropIndex) {
+  if (!draggedSection.value && !draggedPlaceholderRow.value) return;
+
+  if (draggedSection.value) {
+    const fromIndex = draggedSectionIndex.value;
+    if (fromIndex === dropIndex) {
+      draggedSection.value = null;
+      draggedSectionIndex.value = null;
+      return;
+    }
+
+    const dragged = sectionOrder.value.splice(fromIndex, 1)[0];
+    sectionOrder.value.splice(dropIndex, 0, dragged);
     draggedSection.value = null;
     draggedSectionIndex.value = null;
     return;
   }
 
-  const fromIndex = draggedSectionIndex.value;
-  const dragged = sectionOrder.value.splice(fromIndex, 1)[0];
-  sectionOrder.value.splice(dropIndex, 0, dragged);
-  draggedSection.value = null;
-  draggedSectionIndex.value = null;
+  if (draggedPlaceholderRow.value && draggedPlaceholderSection.value) {
+    const fromSectionIndex = draggedPlaceholderSectionIndex.value;
+    const fromRowIndex = draggedPlaceholderRowIndex.value;
+
+    // If dropping into a placeholder section
+    const targetSection = sectionOrder.value[dropIndex];
+    if (targetSection.type === 'placeholder') {
+      // Remove the dragged row's items from placeHolderLayout
+      const rowItemIds = draggedPlaceholderRow.value.map(item => item.id);
+      placeHolderLayout.value = placeHolderLayout.value.filter(item => !rowItemIds.includes(item.id));
+
+      // Insert the dragged row's items into placeHolderLayout (at the end for simplicity)
+      placeHolderLayout.value.push(...draggedPlaceholderRow.value);
+
+      // If the source section is now empty, remove it
+      if (placeHolderLayout.value.length === 0 && sectionOrder.value[fromSectionIndex].type === 'placeholder') {
+        sectionOrder.value.splice(fromSectionIndex, 1);
+      }
+
+      // Ensure a placeholder section exists in sectionOrder
+      if (!sectionOrder.value.some(section => section.type === 'placeholder')) {
+        sectionOrder.value.push({ id: uuidv4(), type: 'placeholder' });
+      }
+    } else {
+      // If dropping into a non-placeholder section, swap sections
+      const dragged = sectionOrder.value.splice(fromSectionIndex, 1)[0];
+      sectionOrder.value.splice(dropIndex, 0, dragged);
+    }
+
+    // Clean up
+    draggedPlaceholderRow.value = null;
+    draggedPlaceholderRowIndex.value = null;
+    draggedPlaceholderSection.value = null;
+    draggedPlaceholderSectionIndex.value = null;
+  }
 };
 
 // Handle the entire tabsList when drag starts
@@ -2346,71 +2493,50 @@ const duplicateColumn = (componentItem, index) => {
 // function for dublicate placeholder cols 
 const duplicatePlaceholderColumn = (componentItem, index) => {
   const totalCols = 12;
-
   const currentCols = componentItem.cols;
-  console.log("the current cols is : ", currentCols)
 
-  // Create a new placeholder with the same width
   const newPlaceholder = {
     id: uuidv4(),
     type: 'placeholder',
     cols: currentCols,
   };
 
-  // Insert new placeholder after the current column
   placeHolderLayout.value.splice(index + 1, 0, newPlaceholder);
 
-  // Calculate total column width in placeHolderLayout
-  let currentRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
+  let currentRowCols = 0;
+  let currentRow = [];
+  const newRows = [];
 
-  // Handle overflow if total width exceeds 12
-  if (currentRowCols > totalCols) {
-    // Pop the last item to keep the current row at 12 cols
-    const lastItem = placeHolderLayout.value.pop();
-
-    // Start a new row in placeHolderLayout with the popped item
-    placeHolderLayout.value.push({
-      id: uuidv4(),
-      type: lastItem.type,
-      cols: lastItem.cols,
-      component: lastItem.component ? markRaw(lastItem.component) : null,
-      title: lastItem.title,
-    });
-
-    // Recalculate current row cols
-    currentRowCols = placeHolderLayout.value.reduce((sum, item) => sum + item.cols, 0);
-
-    // If the current row is still less than 12, add a placeholder
-    if (currentRowCols < totalCols) {
-
-
-      placeHolderLayout.value.push({
-        id: uuidv4(),
-        type: 'placeholder',
-
-      });
-    }
-  } else if (currentRowCols < totalCols) {
-    // If there's empty space, adjust or add a placeholder
-
-    const existingPlaceholderIndex = placeHolderLayout.value.findIndex(
-      (item) => item.type === 'placeholder'
-    );
-
-    if (existingPlaceholderIndex !== -1) {
-      // Adjust existing placeholder's width
-
+  placeHolderLayout.value.forEach((item) => {
+    if (currentRowCols + item.cols <= totalCols) {
+      currentRow.push(item);
+      currentRowCols += item.cols;
     } else {
-      // Add a new placeholder for the remaining space
-
-      placeHolderLayout.value.push({
-        id: uuidv4(),
-        type: 'placeholder',
-      });
+      if (currentRow.length > 0) {
+        newRows.push([...currentRow]);
+      }
+      currentRow = [item];
+      currentRowCols = item.cols;
     }
+  });
+
+  if (currentRow.length > 0) {
+    newRows.push([...currentRow]);
   }
 
+  const lastRow = newRows[newRows.length - 1];
+  const lastRowCols = lastRow.reduce((sum, curr) => sum + curr.cols, 0);
+  if (lastRowCols < totalCols) {
+    lastRow.push({
+      id: uuidv4(),
+      type: 'placeholder',
+      cols: totalCols - lastRowCols,
+    });
+  }
 
+  placeHolderLayout.value = newRows.flat();
+  // Reset hover states for all rows
+  hoverPlaceholderRows.value = {};
 };
 
 // function for component drag and drop into column and Updated onComponentDragStart to ensure the correct component is tracked for deletion
@@ -2421,6 +2547,186 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
   event.dataTransfer.setData('componentDrag', comp.title);
 };
 
+// this will make the new section of the placeholder roe if the placeholder row column exceeds with 12 cols 
+const placeHolderRows = computed(() => {
+  const totalCols = 12;
+  let currentRowCols = 0;
+  let currentRow = [];
+  const rows = [];
+
+  placeHolderLayout.value.forEach((item) => {
+    if (currentRowCols + item.cols <= totalCols) {
+      currentRow.push(item);
+      currentRowCols += item.cols;
+    } else {
+      rows.push([...currentRow]);
+      currentRow = [item];
+      currentRowCols = item.cols;
+    }
+  });
+
+  if (currentRow.length > 0) {
+    rows.push([...currentRow]);
+  }
+
+  return rows.map((row) => {
+    const rowCols = row.reduce((sum, item) => sum + item.cols, 0);
+    if (rowCols < totalCols) {
+      row.push({
+        id: uuidv4(),
+        type: 'placeholder',
+        cols: totalCols - rowCols,
+      });
+    }
+    return row;
+  });
+});
+
+// this function is for delete the entire row of placeholder 
+const deletePlaceholderRow = (rowIndex) => {
+  const row = placeHolderRows.value[rowIndex];
+  if (!row) {
+    return;
+  }
+
+  // Check if the row contains any components or tabsList
+  const containsComponent = row.some(
+    (item) => item.type === 'component' || item.type === 'tabsList'
+  );
+
+  if (containsComponent) {
+    // Show confirmation dialog if row contains components or tabs
+    deleteContext.value = 'placeholderRow';
+    deleteRowIndex.value = rowIndex;
+    showDeleteConfirm.value = true;
+  } else {
+    // Directly delete the row if empty placeholder 
+    deletePlaceholderRowConfirmed(rowIndex);
+  }
+};
+
+// delte the entire row of placeholder and open the drawer if placeholder contains any components
+const deletePlaceholderRowConfirmed = (rowIndex) => {
+  const row = placeHolderRows.value[rowIndex];
+  if (!row) {
+    return;
+  }
+
+  // Process each item in the row to hide components
+  row.forEach((item) => {
+    if (item.type === 'component') {
+      const component = componentHeading.value.find((comp) => comp.component === item.component);
+      if (component) {
+        component.visibility = false;
+        component.icon = 'fa-solid fa-eye-slash';
+        component.storedComponent = {
+          component: markRaw(item.component),
+          title: item.title,
+          cols: item.cols,
+          index: placeHolderLayout.value.findIndex(i => i.id === item.id),
+        };
+        component.storedPlaceholder = null;
+        component.storedTab = null;
+      }
+    } else if (item.type === 'tabsList') {
+      item.tabsList.forEach((tab) => {
+        const tabComponent = componentHeading.value.find((comp) => comp.component === tab.component);
+        if (tabComponent) {
+          tabComponent.visibility = false;
+          tabComponent.icon = 'fa-solid fa-eye-slash';
+          tabComponent.storedTab = {
+            title: tab.title,
+            value: tab.value,
+            component: markRaw(tab.component),
+            index: item.tabsList.findIndex(t => t.id === tab.id),
+            tabsListId: item.id,
+          };
+          tabComponent.storedComponent = null;
+          tabComponent.storedPlaceholder = null;
+        }
+      });
+      delete tabStates.value[item.id];
+      const tabsHeading = componentHeading.value.find(h => h.title === 'Tabs');
+      if (tabsHeading) {
+        tabsHeading.visibility = false;
+        tabsHeading.icon = 'fa-solid fa-eye-slash';
+        tabsHeading.storedTabsList = null;
+      }
+    }
+  });
+
+  // Remove the items in this row from placeHolderLayout
+  const rowItemIds = row.map(item => item.id);
+  placeHolderLayout.value = placeHolderLayout.value.filter(item => !rowItemIds.includes(item.id));
+
+  // Clean up hover state
+  delete hoverPlaceholderRows.value[rowIndex];
+
+  // If placeHolderLayout is empty, remove the placeholder section from sectionOrder
+  if (placeHolderLayout.value.length === 0) {
+    const placeholderSectionIndex = sectionOrder.value.findIndex(section => section.type === 'placeholder');
+    if (placeholderSectionIndex !== -1) {
+      sectionOrder.value.splice(placeholderSectionIndex, 1);
+    }
+  }
+};
+
+// Drag start handler for placeholder rows
+const onPlaceholderRowDragStart = (event, row, rowIndex, section, sectionIndex) => {
+  draggedPlaceholderRow.value = row;
+  draggedPlaceholderRowIndex.value = rowIndex;
+  draggedPlaceholderSection.value = section;
+  draggedPlaceholderSectionIndex.value = sectionIndex;
+  event.dataTransfer.setData('sectionType', 'placeholderRow');
+};
+
+// Drop handler for placeholder rows
+const onPlaceholderRowDrop = (event, dropRowIndex, section, sectionIndex) => {
+  event.preventDefault();
+
+  // Handle placeholder row drop
+  if (draggedPlaceholderRow.value && draggedPlaceholderSection.value) {
+    const fromRowIndex = draggedPlaceholderRowIndex.value;
+    const fromSectionIndex = draggedPlaceholderSectionIndex.value;
+
+    // If dropping within the same placeholder section
+    if (section.id === draggedPlaceholderSection.value.id && fromRowIndex === dropRowIndex) {
+      draggedPlaceholderRow.value = null;
+      draggedPlaceholderRowIndex.value = null;
+      draggedPlaceholderSection.value = null;
+      draggedPlaceholderSectionIndex.value = null;
+      return;
+    }
+
+    // Remove the dragged row's items from placeHolderLayout
+    const rowItemIds = draggedPlaceholderRow.value.map(item => item.id);
+    placeHolderLayout.value = placeHolderLayout.value.filter(item => !rowItemIds.includes(item.id));
+
+    // Insert the dragged row's items at the drop position
+    const dropPosition = placeHolderRows.value.slice(0, dropRowIndex).reduce((sum, row) => sum + row.length, 0);
+    placeHolderLayout.value.splice(dropPosition, 0, ...draggedPlaceholderRow.value);
+
+    // Clean up
+    draggedPlaceholderRow.value = null;
+    draggedPlaceholderRowIndex.value = null;
+    draggedPlaceholderSection.value = null;
+    draggedPlaceholderSectionIndex.value = null;
+    return;
+  }
+
+  // Handle section drop (componentOrder or tabsList) into placeholder section
+  if (draggedSection.value) {
+    const fromSectionIndex = draggedSectionIndex.value;
+    const dragged = sectionOrder.value.splice(fromSectionIndex, 1)[0];
+
+    // Insert the dragged section at the drop section index
+    sectionOrder.value.splice(sectionIndex, 0, dragged);
+
+    // Clean up
+    draggedSection.value = null;
+    draggedSectionIndex.value = null;
+  }
+};
 
 </script>
 
@@ -2467,6 +2773,10 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
   color: white;
   box-shadow: 0 2px 6px rgba(136, 198, 213, 0.3);
   border-radius: 6px !important;
+}
+
+.tablist-tab:hover {
+  background-color: rgba(136, 198, 213, 0.16);
 }
 
 .default-tab {
@@ -2682,5 +2992,29 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
 
 .placeholder-tablist-row {
   left: calc(50% + 30px);
+}
+
+.delete-dialog {
+  background: rgba(47, 51, 73, 1);
+  color: rgba(255, 222, 245, 0.7);
+}
+
+.dialog-text {
+  text-align: center;
+  font-size: 17px !important;
+  color: rgba(225, 222, 245, 0.7);
+  font-weight: 600;
+}
+
+.exclamation {
+  border: thin solid rgba(255, 76, 81, 1);
+  color: rgba(255, 2, 2, 1);
+  font-size: 30px;
+  width: 60px;
+  border-radius: 50%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

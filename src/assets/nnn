@@ -24,8 +24,7 @@
       <v-navigation-drawer class="drawer-section" v-model="drawer" left permanent width="400">
         <v-tabs v-model="tabs" class="d-flex align-items-center justify-content-between position-relative">
           <div class="me-5">
-            <v-tab value="one">PlaceHolders</v-tab>
-            <v-tab value="two">Components</v-tab>
+            <v-tab value="one">Components</v-tab>
           </div>
           <div class="position-absolute xmark" @click="drawer = false">
             <i class="fa-solid fa-xmark"></i>
@@ -36,43 +35,6 @@
 
         <v-tabs-window v-model="tabs">
           <v-tabs-window-item value="one">
-            <div class="mt-2">
-              <h6 class="m-0 mt-4 text-center">Select Placeholders Columns</h6>
-              <!-- Placeholder card -->
-              <div class="mt-3 w-100 d-flex align-items-center justify-content-center">
-                <v-card class="placeholder-card mb-2" width="300" elevation="5">
-                  <v-card-title class="placeholder-title">Column Placeholders</v-card-title>
-                  <v-card-text>
-                    <div class="d-flex" @click="addPlaceHolderRow([4, 4, 4])">
-                      <v-col v-for="col in 3" :key="col" cols="4">
-                        <div class="placeholder-col"></div>
-                      </v-col>
-                    </div>
-                    <div class="d-flex" @click="addPlaceHolderRow([6, 6])">
-                      <v-col v-for="col in 2" :key="col" cols="6">
-                        <div class="placeholder-col"></div>
-                      </v-col>
-                    </div>
-                    <div class="d-flex" @click="addPlaceHolderRow([8, 4])">
-                      <v-col cols="8">
-                        <div class="placeholder-col"></div>
-                      </v-col>
-                      <v-col cols="4">
-                        <div class="placeholder-col"></div>
-                      </v-col>
-                    </div>
-                    <div class="d-flex" @click="addPlaceHolderRow([12])">
-                      <v-col v-for="col in 1" :key="col" cols="12">
-                        <div class="placeholder-col"></div>
-                      </v-col>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </div>
-            </div>
-          </v-tabs-window-item>
-
-          <v-tabs-window-item value="two">
             <v-list density="compact" nav>
               <v-list-item>
                 <div class="d-flex justify-content-between align-items-center p-3"
@@ -89,8 +51,37 @@
         </v-tabs-window>
       </v-navigation-drawer>
 
-      <div v-for="(section, index) in sectionOrder" :key="section.id" class="section-wrapper"
-        @drop="onSectionDrop($event, index)">
+
+
+
+      <div v-for="(section, index) in sectionOrder" :key="section.id" class="section-wrapper" @drop="onSectionDrop($event, index)">
+
+         <!-- placeholder container div -->
+        <div class="placeholder-make-div mb-5 d-flex align-items-center justify-content-between m-auto" v-if="placeholderSection === section.id" style="width: 800px;">
+    <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 4, 4], section.id)">
+      <div class="exampleSectionFullNew"></div>
+      <div class="exampleSectionFullNew"></div>
+      <div class="exampleSectionFullNew"></div>
+    </div>
+    <div class="d-flex gap-1" @click="addPlaceHolderRow([6, 6], section.id)">
+      <div class="exampleSectionFullNew"></div>
+      <div class="exampleSectionFullNew"></div>
+    </div>
+    <div class="d-flex gap-1" @click="addPlaceHolderRow([8, 4], section.id)">
+      <div class="exampleSectionFullNewseventy"></div>
+      <div class="exampleSectionFullNew"></div>
+    </div>
+    <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 8], section.id)">
+      <div class="exampleSectionFullNew"></div>
+      <div class="exampleSectionFullNewseventy"></div>
+    </div>
+    <div class="d-flex gap-1" @click="addPlaceHolderRow([12], section.id)">
+      <div class="exampleSectionFullNewseventy"></div>
+    </div>
+    <div class="position-absolute xmark-icon" @click="togglePlaceholder(section.id)">
+      <i class="fa-solid fa-xmark"></i>
+    </div>
+  </div>
 
         <!-- Component Order Row -->
         <v-row v-if="section.type === 'componentOrder'"
@@ -99,7 +90,7 @@
 
           <v-tooltip text="Add Placeholder" location="top">
             <template v-slot:activator="{ props }">
-              <div class="placeholder-row" v-if="hoverRow" v-bind="props" @click="drawer = true">
+              <div class="placeholder-row" v-if="hoverRow" v-bind="props" @click="togglePlaceholder(section.id)">
                 <i class="fa-solid fa-plus"></i>
               </div>
             </template>
@@ -228,8 +219,8 @@
         </v-row>
 
         <!-- Dynamic placeholder row -->
-        <v-row class="" v-if="section.type === 'componentOrder'">
-          <v-col v-for="(item, index) in placeHolderLayout" :key="item.id" :cols="item.cols"
+        <v-row class=" mb-5" v-if="section.type === 'componentOrder'">
+          <v-col v-for="(item, index) in placeHolderLayout.filter(item => item.sectionId === section.id)" :key="item.id" :cols="item.cols"
             @dragover="onDragOver($event)" @drop="onDropToPlaceholder($event, item.id, index)"
             @mouseenter="onMouseEnterPlaceholder(item.id)" @mouseleave="onMouseLeavePlaceholder"
             class="position-relative">
@@ -326,7 +317,8 @@
 
           <v-tooltip text="Add Placeholder" location="top">
             <template v-slot:activator="{ props }">
-              <div class="placeholder-tablist-row" v-if="hoverTablistRow" v-bind="props" @click="drawer = true">
+              <div class="placeholder-tablist-row" v-if="hoverTablistRow" v-bind="props"
+                @click="togglePlaceholder(section.id)">
                 <i class="fa-solid fa-plus"></i>
               </div>
             </template>
@@ -404,6 +396,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 const drawer = ref(false);
 const tabs = ref('one');
+
+
 
 const componentHeading = ref([
   {
@@ -510,6 +504,16 @@ const draggedComponentParent = ref(null);
 
 // New reference to manage tab state for each tabsList
 const tabStates = ref({});
+
+const placeholderSection = ref({});
+
+const togglePlaceholder = (sectionId) => {
+  if (placeholderSection.value === sectionId) {
+    placeholderSection.value = null; // अगर वही सेक्शन दोबारा क्लिक किया, तो बंद करें
+  } else {
+    placeholderSection.value = sectionId; // नया सेक्शन सेट करें
+  }
+};
 
 // Tabs list with component field for dynamic content
 const tab = ref('orders');
@@ -918,6 +922,20 @@ const onDragOver = (event) => {
 const onDrop = (event, dropIndex) => {
   event.preventDefault();
 
+  const targetItem = componentOrder.value[dropIndex];
+  if (!targetItem) {
+    logError('Invalid drop target index');
+    return;
+  }
+
+  // Ensure sectionId is respected
+  if (draggedItem.value && draggedItem.value.sectionId !== targetItem.sectionId) {
+    draggedItem.value.sectionId = targetItem.sectionId;
+  }
+
+  handleDrop(event, dropIndex, 'componentOrder', targetItem.sectionId);
+
+
   // Handle component drag and drop into column
   if (draggedComponent.value && draggedComponentParent.value) {
     const targetItem = componentOrder.value[dropIndex];
@@ -1261,7 +1279,43 @@ const onDrop = (event, dropIndex) => {
     const fromIndex = draggedPlaceholderIndex.value;
     const targetItem = componentOrder.value[dropIndex];
 
-    if (dragged.type === 'component') {
+    // Handle swap when both source and target are components and dragged.cols === 12
+    if (dragged.type === 'component' && targetItem.type === 'component' && dragged.cols === 12) {
+      // Swap components between componentOrder and placeHolderLayout
+      componentOrder.value[dropIndex] = {
+        id: targetItem.id,
+        type: 'component',
+        component: [{ component: markRaw(dragged.component), title: dragged.title }],
+        cols: targetItem.cols,
+        title: dragged.title,
+      };
+      placeHolderLayout.value[fromIndex] = {
+        id: dragged.id,
+        type: 'component',
+        component: markRaw(targetItem.component[0].component),
+        cols: dragged.cols,
+        title: targetItem.component[0].title,
+      };
+
+      // Update visibility in componentHeading for both components
+      const draggedHeading = componentHeading.value.find(h => h.component === dragged.component);
+      const targetHeading = componentHeading.value.find(h => h.component === targetItem.component[0].component);
+      if (draggedHeading) {
+        draggedHeading.visibility = true;
+        draggedHeading.icon = 'fa-solid fa-eye';
+        draggedHeading.storedComponent = null;
+        draggedHeading.storedPlaceholder = null;
+        draggedHeading.storedTab = null;
+      }
+      if (targetHeading) {
+        targetHeading.visibility = true;
+        targetHeading.icon = 'fa-solid fa-eye';
+        targetHeading.storedComponent = null;
+        targetHeading.storedPlaceholder = null;
+        targetHeading.storedTab = null;
+      }
+    } else if (dragged.type === 'component') {
+      // Original logic for non-swap cases
       componentOrder.value[dropIndex] = {
         id: targetItem.id,
         type: 'component',
@@ -1409,10 +1463,14 @@ const onDrop = (event, dropIndex) => {
 const onDropToPlaceholder = (event, placeholderId, dropIndex) => {
   event.preventDefault();
   const placeholderIndex = placeHolderLayout.value.findIndex(item => item.id === placeholderId);
+
+
   if (placeholderIndex === -1) {
-    console.error('Placeholder not found:', placeholderId);
+    logError('Placeholder not found:', placeholderId);
     return;
   }
+
+  handleDrop(event, placeholderIndex, 'placeHolderLayout', placeHolderLayout.value[placeholderIndex].sectionId);
 
   const targetItem = placeHolderLayout.value[placeholderIndex];
 
@@ -2080,16 +2138,88 @@ const closeToggleBtns = (id) => {
 };
 
 // Add placeholder row
-const addPlaceHolderRow = (col) => {
-  col.forEach((cols) => {
-    placeHolderLayout.value.push({
-      id: uuidv4(),
-      type: 'placeholder',
-      cols,
-    });
-  });
-};
+const addPlaceHolderRow = (col, sectionId) => {
+  const sectionIndex = sectionOrder.value.findIndex(section => section.id === sectionId);
+  if (sectionIndex === -1) return;
 
+  // Get the existing section
+  const currentSection = sectionOrder.value[sectionIndex];
+
+  // Create new placeholders
+  const newCols = col.map(cols => ({
+    id: uuidv4(),
+    type: 'placeholder',
+    cols,
+    sectionId,
+  }));
+
+  // If the section is a componentOrder section, preserve existing components
+  if (currentSection.type === 'componentOrder') {
+    // Filter out placeholders for this section to avoid duplication
+    placeHolderLayout.value = placeHolderLayout.value.filter(item => item.sectionId !== sectionId);
+
+    // Add new placeholders to placeHolderLayout
+    placeHolderLayout.value.push(...newCols);
+
+    // Update componentOrder to avoid duplication
+    const existingComponents = componentOrder.value.filter(item => item.sectionId === sectionId);
+    if (existingComponents.length > 0) {
+      // Move existing components to placeHolderLayout if they fit
+      existingComponents.forEach((comp, index) => {
+        if (index < newCols.length) {
+          newCols[index] = {
+            ...newCols[index],
+            type: comp.type,
+            component: comp.component,
+            title: comp.title,
+          };
+        }
+      });
+      // Clear componentOrder for this section to prevent duplication
+      componentOrder.value = componentOrder.value.filter(item => item.sectionId !== sectionId);
+    }
+  }
+  // If the section is a tabsList section
+  else if (currentSection.type === 'tabsList') {
+    // Move tabsList to a new placeholder if cols is [12]
+    if (col.length === 1 && col[0] === 12) {
+      const newSectionId = uuidv4();
+      placeHolderLayout.value = placeHolderLayout.value.filter(item => item.sectionId !== sectionId);
+      placeHolderLayout.value.push({
+        id: uuidv4(),
+        type: 'tabsList',
+        tabsList: tabsList.value.map(tab => ({ ...tab, component: markRaw(tab.component) })),
+        cols: 12,
+        sectionId: newSectionId,
+      });
+      initializeTabState(newSectionId);
+      tabsList.value = []; // Clear main tabsList to avoid duplication
+      tab.value = null;
+
+      // Update sectionOrder
+      sectionOrder.value.splice(sectionIndex, 1, { id: newSectionId, type: 'componentOrder' });
+    } else {
+      // For other column layouts, convert tabs to components if possible
+      placeHolderLayout.value = placeHolderLayout.value.filter(item => item.sectionId !== sectionId);
+      placeHolderLayout.value.push(...newCols);
+      tabsList.value.forEach((tab, index) => {
+        if (index < newCols.length) {
+          newCols[index] = {
+            ...newCols[index],
+            type: 'component',
+            component: markRaw(tab.component),
+            title: tab.title,
+          };
+        }
+      });
+      tabsList.value = [];
+      tab.value = null;
+    }
+  }
+
+  // Close placeholder div
+  placeholderSection.value = null;
+};
 
 // Updated function to delete component or tabsList in placeholder without removing the placeholder column
 const deletePlaceholderColumn = (id, index) => {
@@ -2683,67 +2813,6 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
 .placeholder-tablist-row {
   left: calc(50% + 30px);
 }
-</style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- 
-
-
-
-
-
-
-
-
-      <!-- placeholder container div -->
-      <!-- <div class="placeholder-make-div mb-5 d-flex align-items-center justify-content-between m-auto"
-        style="width: 800px;">
-        <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 4, 4])">
-          <div class="exampleSectionFullNew"></div>
-          <div class="exampleSectionFullNew"></div>
-          <div class="exampleSectionFullNew"></div>
-        </div>
-
-        <div class="d-flex gap-1" @click="addPlaceHolderRow([6, 6])">
-          <div class="exampleSectionFullNew"></div>
-          <div class="exampleSectionFullNew"></div>
-        </div>
-
-        <div class="d-flex gap-1" @click="addPlaceHolderRow([8, 4])">
-          <div class="exampleSectionFullNewseventy"></div>
-          <div class="exampleSectionFullNew"></div>
-        </div>
-
-        <div class="d-flex gap-1" @click="addPlaceHolderRow([4, 8])">
-          <div class="exampleSectionFullNew"></div>
-          <div class="exampleSectionFullNewseventy"></div>
-        </div>
-
-        <div class="d-flex gap-1" @click="addPlaceHolderRow([12])">
-          <div class="exampleSectionFullNewseventy"></div>
-        </div>
-        <div class="position-absolute">
-          <i class="fa-solid fa-xmark xmark-icon"></i>
-        </div>
-      </div> -->
-
-
-
-
 
 
 .placeholder-make-div {
@@ -2769,15 +2838,8 @@ const onComponentDragStart = (event, comp, compIndex, parentItem, parentIndex) =
 }
 
 .xmark-icon {
-  right: 365px;
-  top: 80px;
-  /* color: red; */
-  /* background: red;
-    padding: 2px;
-    border-radius: 100%;
-    font-size: 14px; */
+  right: 344px;
+  top: -2px;
+  color: red;
 }
-
-
-
--->
+</style>
